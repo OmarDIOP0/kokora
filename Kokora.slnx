@@ -1,3 +1,12 @@
 <Solution>
-  <Project Path="Kokora/Kokora.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/Kokora.Application/Kokora.Application.csproj" />
+    <Project Path="src/Kokora.Domain/Kokora.Domain.csproj" />
+    <Project Path="src/Kokora.Infrastructure/Kokora.Infrastructure.csproj" />
+    <Project Path="src/Kokora.Web/Kokora.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Kokora.Application.Tests/Kokora.Application.Tests.csproj" />
+    <Project Path="tests/Kokora.Domain.Tests/Kokora.Domain.Tests.csproj" />
+  </Folder>
 </Solution>

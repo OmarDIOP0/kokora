@@ -51,6 +51,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
+
+        // Identity impose ses noms de tables (AspNetUsers…) : on les aligne sur la convention snake_case.
+        b.Entity<AppUser>().ToTable("users");
+        b.Entity<Microsoft.AspNetCore.Identity.IdentityRole>().ToTable("roles");
+        b.Entity<Microsoft.AspNetCore.Identity.IdentityUserRole<string>>().ToTable("user_roles");
+        b.Entity<Microsoft.AspNetCore.Identity.IdentityUserClaim<string>>().ToTable("user_claims");
+        b.Entity<Microsoft.AspNetCore.Identity.IdentityUserLogin<string>>().ToTable("user_logins");
+        b.Entity<Microsoft.AspNetCore.Identity.IdentityUserToken<string>>().ToTable("user_tokens");
+        b.Entity<Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>>().ToTable("role_claims");
+
         b.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }

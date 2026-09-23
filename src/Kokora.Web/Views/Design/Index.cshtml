@@ -21,14 +21,9 @@
         <div>
             <p class="label">Kokora · phase 1</p>
             <h1 class="mt-1 text-[34px]">Design system</h1>
-            <p class="mt-1 max-w-[52ch] text-ink-2">Choisissez une palette, basculez en mode sombre : toute la page se met à jour. Données fictives.</p>
+            <p class="mt-1 max-w-[52ch] text-ink-2">Palette « Pelouse ». Basculez en mode sombre : toute la page se met à jour. Données fictives.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            <div class="segmented" role="group" aria-label="Palette">
-                <button type="button" data-set-palette="pelouse" aria-pressed="true">Pelouse</button>
-                <button type="button" data-set-palette="laterite" aria-pressed="false">Latérite</button>
-                <button type="button" data-set-palette="nuit" aria-pressed="false">Nuit</button>
-            </div>
             <button type="button" class="btn btn-secondary btn-sm" x-data @@click="$store.theme.toggle()" data-theme-toggle>
                 <icon name="moon" class="dark-hide" /><icon name="sun" class="dark-show" />
                 <span class="dark-hide">Sombre</span><span class="dark-show">Clair</span>

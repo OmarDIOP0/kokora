@@ -22,8 +22,6 @@
             var d = document.documentElement, t = null;
             try {
                 t = localStorage.getItem('k-theme');
-                var p = localStorage.getItem('k-palette');
-                if (p && p !== 'pelouse') d.dataset.palette = p;
                 if (localStorage.getItem('k-saver') === '1') d.dataset.saver = '1';
             } catch (e) { }
             d.dataset.theme = (t === 'dark' || t === 'light') ? t

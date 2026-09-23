@@ -18,7 +18,7 @@
 @font-face { font-family: "Barlow"; font-weight: 500; font-display: swap; src: url("/fonts/barlow-latin-500-normal.woff2") format("woff2"); }
 @font-face { font-family: "Barlow"; font-weight: 600; font-display: swap; src: url("/fonts/barlow-latin-600-normal.woff2") format("woff2"); }
 
-/* ---------- Tokens : palette « Pelouse » (défaut), clair ---------- */
+/* ---------- Tokens : palette « Pelouse », mode clair ---------- */
 :root {
   color-scheme: light;
   --bg: #f3f2ee;
@@ -43,40 +43,6 @@
   --zone-q: #16884a;
   --zone-p: #c9901d;
   --zone-e: #cf3328;
-}
-
-/* ---------- Palette « Latérite » ---------- */
-:root[data-palette="laterite"] {
-  --bg: #f5f1ea;
-  --surface: #fffdf9;
-  --surface-2: #eee6da;
-  --line: #e3d9c9;
-  --line-strong: #cdbfaa;
-  --text: #1c1613;
-  --text-2: #62574d;
-  --text-3: #7a6e63;
-  --brand: #a8421a;
-  --brand-hover: #8d3714;
-  --brand-ink: #ffffff;
-  --brand-soft: #f5e2d6;
-  --accent: #2f5a44;
-}
-
-/* ---------- Palette « Nuit de navétane » ---------- */
-:root[data-palette="nuit"] {
-  --bg: #f1f2f4;
-  --surface: #ffffff;
-  --surface-2: #e8eaee;
-  --line: #dcdfe5;
-  --line-strong: #c3c8d2;
-  --text: #121726;
-  --text-2: #535b6e;
-  --text-3: #6a7285;
-  --brand: #14213d;
-  --brand-hover: #0d172c;
-  --brand-ink: #ffffff;
-  --brand-soft: #e2e6ef;
-  --accent: #b88a0b;
 }
 
 /* ---------- Mode sombre ---------- */
@@ -105,37 +71,7 @@
   --zone-p: #e3a33b;
   --zone-e: #f0574c;
 }
-:root[data-theme="dark"][data-palette="laterite"] {
-  --bg: #13100e;
-  --surface: #1a1614;
-  --surface-2: #231e1b;
-  --line: #2f2824;
-  --line-strong: #433a34;
-  --text: #f0e9e3;
-  --text-2: #b3a79c;
-  --text-3: #8f8378;
-  --brand: #e27548;
-  --brand-hover: #eb8b63;
-  --brand-ink: #1a0b04;
-  --brand-soft: #3a2116;
-  --accent: #7fb896;
-}
-:root[data-theme="dark"][data-palette="nuit"] {
-  --bg: #0a0f1d;
-  --surface: #10172b;
-  --surface-2: #161f38;
-  --line: #212a45;
-  --line-strong: #323c5c;
-  --text: #e7eaf2;
-  --text-2: #a0a8be;
-  --text-3: #7e87a0;
-  --brand: #e9b824;
-  --brand-hover: #f2c643;
-  --brand-ink: #1a1300;
-  --brand-soft: #2c2716;
-  --accent: #e9b824;
-}
-/* Sans JavaScript : on suit le système (palette par défaut uniquement). */
+/* Sans JavaScript : on suit le réglage du système. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
     color-scheme: dark;

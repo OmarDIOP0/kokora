@@ -1,0 +1,22 @@
+@model MatchGroupVm
+<section class="section" style="--comp:@Model.Color">
+    <header class="section-head" data-accent>
+        @if (Model.Url is not null)
+        {
+            <a href="@Model.Url" class="flex min-w-0 flex-1 items-center gap-2 hover:underline underline-offset-2">
+                <span class="truncate">@Model.Title</span>
+                @if (Model.Subtitle is not null) { <span class="sub truncate">@Model.Subtitle</span> }
+            </a>
+            <icon name="chevron-right" class="text-ink-3" />
+        }
+        else
+        {
+            <span class="truncate">@Model.Title</span>
+            @if (Model.Subtitle is not null) { <span class="sub truncate">@Model.Subtitle</span> }
+        }
+    </header>
+    @foreach (var m in Model.Matches)
+    {
+        <partial name="Components/_MatchRow" model="m" view-data="ViewData" />
+    }
+</section>

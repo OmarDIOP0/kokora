@@ -1,0 +1,70 @@
+@model StandingsTableVm
+<div class="table-wrap">
+    <table class="standings @(Model.Compact ? "compact" : "")">
+        <caption class="sr-only">Classement @Model.Title</caption>
+        <thead>
+            <tr>
+                <th class="pos" scope="col"><span class="sr-only">Position</span>#</th>
+                <th class="team !text-left" scope="col">Équipe</th>
+                <th scope="col"><abbr title="Matchs joués" class="no-underline">MJ</abbr></th>
+                @if (!Model.Compact)
+                {
+                    <th scope="col"><abbr title="Gagnés" class="no-underline">G</abbr></th>
+                    <th scope="col"><abbr title="Nuls" class="no-underline">N</abbr></th>
+                    <th scope="col"><abbr title="Perdus" class="no-underline">P</abbr></th>
+                    <th scope="col" class="max-sm:hidden"><abbr title="Buts pour" class="no-underline">BP</abbr></th>
+                    <th scope="col" class="max-sm:hidden"><abbr title="Buts contre" class="no-underline">BC</abbr></th>
+                }
+                <th scope="col"><abbr title="Différence de buts" class="no-underline">Diff</abbr></th>
+                <th scope="col">Pts</th>
+                @if (!Model.Compact)
+                {
+                    <th scope="col" class="!pr-4">Forme</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Model.Rows)
+            {
+                <tr data-zone="@r.Zone" data-team="@r.Team.Id">
+                    <td class="pos">@r.Rank</td>
+                    <td class="team">
+                        <a href="/equipes/@r.Team.Slug"><crest team="r.Team" /><span class="truncate">@r.Team.Name</span></a>
+                    </td>
+                    <td>@r.Played</td>
+                    @if (!Model.Compact)
+                    {
+                        <td>@r.Won</td>
+                        <td>@r.Drawn</td>
+                        <td>@r.Lost</td>
+                        <td class="max-sm:hidden">@r.GoalsFor</td>
+                        <td class="max-sm:hidden">@r.GoalsAgainst</td>
+                    }
+                    <td class="text-ink-2">@Display.Signed(r.GoalDifference)</td>
+                    <td class="pts">@r.Points</td>
+                    @if (!Model.Compact)
+                    {
+                        <td class="!pr-4">
+                            <span class="form" aria-label="Forme : @string.Join(", ", r.Form.Select(Display.FormTitle))">
+                                @foreach (var f in r.Form)
+                                {
+                                    <span class="@Display.FormClass(f)" aria-hidden="true">@f</span>
+                                }
+                            </span>
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+@if (Model.Legend.Count > 0)
+{
+    <ul class="flex flex-wrap gap-x-4 gap-y-1 border-t border-line px-4 py-2.5 text-[12.5px] text-ink-2">
+        @foreach (var (zone, text) in Model.Legend)
+        {
+            var color = zone switch { 'q' => "var(--zone-q)", 'p' => "var(--zone-p)", _ => "var(--zone-e)" };
+            <li class="flex items-center gap-1.5"><span class="inline-block h-2.5 w-[3px] rounded-sm" style="background:@color"></span>@text</li>
+        }
+    </ul>
+}

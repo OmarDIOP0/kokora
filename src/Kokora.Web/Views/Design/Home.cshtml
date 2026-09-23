@@ -1,0 +1,101 @@
+@using Kokora.Web.Design
+@{
+    ViewData["Title"] = "Maquette accueil";
+    ViewData["Nav"] = "matchs";
+    var groups = DesignSamples.Today;
+    var live = groups.SelectMany(g => g.Matches).Where(m => m.IsLive).ToList();
+}
+@section SubHeader {
+    <div class="border-b border-line bg-surface md:hidden">
+        <div class="compbar" role="group" aria-label="Compétition">
+            <button type="button" class="chip" aria-pressed="true">Toutes</button>
+            @foreach (var (name, color) in DesignSamples.Competitions)
+            {
+                <button type="button" class="chip" aria-pressed="false" style="--comp:@color"><span class="dot"></span>@name</button>
+            }
+        </div>
+    </div>
+}
+
+<div class="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)_300px] xl:grid-cols-[240px_minmax(0,1fr)_340px]">
+
+    <!-- Colonne gauche : compétitions, équipes suivies -->
+    <aside class="hidden lg:block">
+        <div class="sticky top-[72px] space-y-3">
+            <section class="section">
+                <header class="section-head"><span class="label !text-ink-2">Compétitions</span></header>
+                @foreach (var (name, color) in DesignSamples.Competitions)
+                {
+                    <a href="#" class="row !min-h-11 text-[14px] font-medium" style="--comp:@color">
+                        <span class="comp-swatch"></span>@name
+                    </a>
+                }
+            </section>
+            <section class="section">
+                <header class="section-head"><span class="label !text-ink-2">Mes équipes</span></header>
+                <a href="#" class="row !min-h-11 text-[14px]"><crest team="DesignSamples.Teams[0]" />@DesignSamples.Teams[0].Name</a>
+                <div class="px-4 py-3 text-[13px] text-ink-3">Touchez <icon name="star" class="inline -mt-0.5" /> sur une équipe pour la suivre.</div>
+            </section>
+        </div>
+    </aside>
+
+    <!-- Colonne centrale : matchs -->
+    <div class="min-w-0">
+        <div class="md:mb-3 md:overflow-clip md:rounded-md md:border md:border-line">
+            <nav class="datestrip" aria-label="Jours">
+                @foreach (var d in DesignSamples.Days())
+                {
+                    var isToday = d == KokoraTime.Today;
+                    <a href="#" class="@(isToday ? "has-live" : "")" aria-current="@(isToday ? "date" : null)" aria-label="@KokoraTime.DayRelative(d)">
+                        <span class="dow">@(isToday ? "Auj." : KokoraTime.ShortDayName(d))</span>
+                        <span class="day">@d.Day</span>
+                    </a>
+                }
+            </nav>
+            <div class="flex items-center justify-between gap-2 bg-surface px-4 py-2.5 max-md:border-b max-md:border-line">
+                <div class="segmented" role="group" aria-label="Filtre des matchs">
+                    <button type="button" aria-pressed="false"><span class="live-dot"></span>Direct <span class="num text-ink-3">@live.Count</span></button>
+                    <button type="button" aria-pressed="true">Tous</button>
+                    <button type="button" aria-pressed="false">Résultats</button>
+                </div>
+                <span class="hidden text-[13px] text-ink-3 sm:block">@KokoraTime.Day(KokoraTime.Today)</span>
+            </div>
+        </div>
+
+        <div class="max-md:mt-2">
+            @foreach (var g in groups)
+            {
+                <partial name="Components/_MatchGroup" model="g" view-data='new ViewDataDictionary(ViewData) { ["Wide"] = true }' />
+            }
+        </div>
+    </div>
+
+    <!-- Colonne droite : prochain grand match, classement résumé -->
+    <aside class="space-y-3 max-lg:px-0">
+        <section class="section">
+            <header class="section-head"><span class="label !text-ink-2">Prochain grand match</span></header>
+            <div class="px-4 py-4 text-center">
+                <p class="label">Coupe du Maire · Finale</p>
+                <div class="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                    <div class="grid justify-items-center gap-1.5"><crest team="DesignSamples.Teams[2]" size="lg" /><span class="text-[13px] font-semibold">@DesignSamples.Teams[2].ShortName</span></div>
+                    <span class="font-display text-xl font-semibold text-ink-3">VS</span>
+                    <div class="grid justify-items-center gap-1.5"><span class="crest lg">?</span><span class="text-[13px] font-semibold text-ink-3">Vainqueur DF2</span></div>
+                </div>
+                <p class="score mt-4 text-[26px]" data-countdown="@DesignSamples.NextBigMatch.ToString("O")">…</p>
+                <p class="mt-1 text-[13px] text-ink-2">@KokoraTime.Long(DesignSamples.NextBigMatch)</p>
+            </div>
+        </section>
+
+        <section class="section" style="--comp:@DesignSamples.ColorZoneA">
+            <header class="section-head" data-accent>
+                <span>Zonale 5A</span><span class="sub">Poule A</span>
+                <a href="#" class="ml-auto text-[13px] font-semibold text-brand">Complet</a>
+            </header>
+            <partial name="Components/_StandingsTable" model="DesignSamples.Standings(compact: true)" />
+        </section>
+
+        <section class="section">
+            <div class="notice !border-0"><icon name="bell" class="text-brand" /><span>Reçois les buts de ton équipe en direct. <a href="#">Créer un compte</a></span></div>
+        </section>
+    </aside>
+</div>

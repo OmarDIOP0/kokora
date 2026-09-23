@@ -1,0 +1,303 @@
+@using Kokora.Web.Design
+@{
+    ViewData["Title"] = "Design system";
+    ViewData["Nav"] = "plus";
+    var tokens = new (string Token, string Role)[]
+    {
+        ("--bg", "Fond de page"), ("--surface", "Surface des listes"), ("--surface-2", "Survol, en-têtes"),
+        ("--line", "Filets 1px"), ("--text", "Texte"), ("--text-2", "Texte secondaire"), ("--text-3", "Libellés"),
+        ("--brand", "Couleur principale"), ("--brand-soft", "Teinte principale"), ("--accent", "Accent"),
+        ("--win", "Victoire"), ("--draw", "Nul"), ("--loss", "Défaite"), ("--live", "Direct"), ("--warn", "Reporté / réserve"),
+    };
+    var statuses = Enum.GetValues<MatchStatus>();
+}
+@section Head {
+    <script type="module" src="~/dist/design.js" asp-append-version="true"></script>
+}
+
+<div class="mx-auto max-w-[880px]">
+
+    <div class="flex flex-wrap items-end justify-between gap-4 px-4 pb-4 pt-5 md:px-0">
+        <div>
+            <p class="label">Kokora · phase 1</p>
+            <h1 class="mt-1 text-[34px]">Design system</h1>
+            <p class="mt-1 max-w-[52ch] text-ink-2">Choisissez une palette, basculez en mode sombre : toute la page se met à jour. Données fictives.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <div class="segmented" role="group" aria-label="Palette">
+                <button type="button" data-set-palette="pelouse" aria-pressed="true">Pelouse</button>
+                <button type="button" data-set-palette="laterite" aria-pressed="false">Latérite</button>
+                <button type="button" data-set-palette="nuit" aria-pressed="false">Nuit</button>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" x-data @@click="$store.theme.toggle()" data-theme-toggle>
+                <icon name="moon" class="dark-hide" /><icon name="sun" class="dark-show" />
+                <span class="dark-hide">Sombre</span><span class="dark-show">Clair</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ============ Couleurs ============ -->
+    <section class="section" id="couleurs">
+        <header class="section-head"><span>Couleurs</span><span class="sub">tokens CSS</span></header>
+        <div class="grid sm:grid-cols-2">
+            @foreach (var (token, role) in tokens)
+            {
+                <div class="row sm:odd:border-r sm:odd:border-line">
+                    <span class="h-8 w-8 flex-none rounded-sm" style="background:var(@token);box-shadow:inset 0 0 0 1px var(--line-strong)"></span>
+                    <div class="min-w-0 flex-1">
+                        <div class="font-medium">@role</div>
+                        <div class="text-[12.5px] text-ink-3"><code>@token</code></div>
+                    </div>
+                    <code class="num text-[12.5px] uppercase text-ink-2" data-token="@token"></code>
+                </div>
+            }
+        </div>
+    </section>
+
+    <!-- ============ Typographie ============ -->
+    <section class="section" id="typographie">
+        <header class="section-head"><span>Typographie</span><span class="sub">Barlow Condensed · Barlow</span></header>
+        <div class="row !block !py-4">
+            <p class="label">Titre de page · condensé 700 · 34px</p>
+            <p class="mt-1 font-display text-[34px] font-bold leading-none">Classement de la Zonale 5A</p>
+        </div>
+        <div class="row !block !py-4">
+            <p class="label">Score · condensé 700 · chiffres tabulaires</p>
+            <p class="score mt-2 flex items-center gap-4 text-[56px]">
+                <span>2</span><span class="text-[32px] font-medium text-ink-3">-</span><span>1</span>
+                <span class="ml-4 text-[28px] text-ink-3">10 · 11 · 18 · 71</span>
+            </p>
+        </div>
+        <div class="row !block !py-4">
+            <p class="label">Texte courant · Barlow 400 · 15px</p>
+            <p class="mt-1 max-w-[60ch]">La commission a examiné la réserve déposée après la rencontre de la 4e journée. Le résultat acquis sur le terrain est maintenu.</p>
+        </div>
+        <div class="row !block !py-4">
+            <p class="label">Libellé · petites capitales · 11,5px</p>
+            <p class="label mt-1">Poule A · 4e journée</p>
+        </div>
+    </section>
+
+    <!-- ============ Navigation ============ -->
+    <section class="section" id="navigation">
+        <header class="section-head"><span>Navigation</span></header>
+        <div class="row !block !py-3 text-ink-2">
+            Sur téléphone : barre du bas (5 onglets). À partir de 768px : barre du haut. Redimensionnez la fenêtre pour voir le changement.
+        </div>
+        <div class="compbar border-b border-line" role="group" aria-label="Compétition">
+            <button type="button" class="chip" aria-pressed="true">Toutes</button>
+            @foreach (var (name, color) in DesignSamples.Competitions)
+            {
+                <button type="button" class="chip" aria-pressed="false" style="--comp:@color"><span class="dot"></span>@name</button>
+            }
+        </div>
+        <nav class="datestrip" aria-label="Jours">
+            @foreach (var d in DesignSamples.Days())
+            {
+                var isToday = d == KokoraTime.Today;
+                var cls = d.DayNumber == KokoraTime.Today.DayNumber ? "has-live" : d.DayOfWeek is DayOfWeek.Monday or DayOfWeek.Tuesday ? "is-empty" : "";
+                <a href="#navigation" class="@cls" aria-current="@(isToday ? "date" : null)" aria-label="@KokoraTime.DayRelative(d)">
+                    <span class="dow">@(isToday ? "Auj." : KokoraTime.ShortDayName(d))</span>
+                    <span class="day">@d.Day</span>
+                </a>
+            }
+        </nav>
+        <div class="tabs" role="tablist" aria-label="Onglets du match">
+            <button class="tab" role="tab" aria-selected="true">Résumé</button>
+            <button class="tab" role="tab" aria-selected="false">Compositions</button>
+            <button class="tab" role="tab" aria-selected="false">Stats</button>
+            <button class="tab" role="tab" aria-selected="false">Confrontations</button>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 px-4 py-3">
+            <div class="segmented" role="group" aria-label="Filtre">
+                <button type="button" aria-pressed="false"><span class="live-dot"></span>Direct</button>
+                <button type="button" aria-pressed="true">À venir</button>
+                <button type="button" aria-pressed="false">Résultats</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ Matchs ============ -->
+    <div class="mt-3 flex items-baseline justify-between px-4 pb-2 pt-3 md:px-0">
+        <h2 class="text-[22px]">Lignes de match</h2>
+        <span class="label">tous les statuts</span>
+    </div>
+    @foreach (var g in DesignSamples.Today)
+    {
+        <partial name="Components/_MatchGroup" model="g" />
+    }
+
+    <div class="mt-3 flex items-baseline justify-between px-4 pb-2 pt-3 md:px-0">
+        <h2 class="text-[22px]">Variante large</h2>
+        <span class="label">≥ 1024px</span>
+    </div>
+    <partial name="Components/_MatchGroup" model="DesignSamples.Today[0]" view-data='new ViewDataDictionary(ViewData) { ["Wide"] = true }' />
+
+    <!-- ============ En-tête de match ============ -->
+    <div class="mt-3 px-4 pb-2 pt-3 md:px-0"><h2 class="text-[22px]">En-tête de fiche match</h2></div>
+    <section class="section">
+        @{ var live = DesignSamples.Live; }
+        <div class="px-4 pb-4 pt-3 text-center">
+            <p class="label">Zonale 5A · Poule A · 4e journée</p>
+            <div class="mt-4 grid grid-cols-[1fr_auto_1fr] items-start gap-3">
+                <a href="#" class="grid justify-items-center gap-2"><crest team="live.Home" size="xl" /><span class="font-semibold leading-tight">@live.Home!.Name</span></a>
+                <div class="pt-2">
+                    <div class="score text-[48px] text-live">@live.HomeScore<span class="mx-1.5 text-ink-3">-</span>@live.AwayScore</div>
+                    <div class="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-live"><span class="live-dot"></span><span class="minute">@live.Minute</span></div>
+                </div>
+                <a href="#" class="grid justify-items-center gap-2"><crest team="live.Away" size="xl" /><span class="font-semibold leading-tight">@live.Away!.Name</span></a>
+            </div>
+            <p class="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[13px] text-ink-2">
+                <span class="inline-flex items-center gap-1"><icon name="clock" />@KokoraTime.Long(live.KickoffAt!.Value)</span>
+                <span class="inline-flex items-center gap-1"><icon name="map-pin" />Stade Démo</span>
+                <span class="inline-flex items-center gap-1"><icon name="flag" />Arbitre Démo</span>
+            </p>
+        </div>
+        <div class="tabs !border-t !border-line" role="tablist">
+            <button class="tab" role="tab" aria-selected="true">Résumé</button>
+            <button class="tab" role="tab" aria-selected="false">Compositions</button>
+            <button class="tab" role="tab" aria-selected="false">Stats</button>
+            <button class="tab" role="tab" aria-selected="false">Confrontations</button>
+        </div>
+        <div class="timeline-row"><div class="home">Démo Joueur 9 <icon name="volleyball" class="text-ink-2" /></div><div class="min">12'</div><div class="away"></div></div>
+        <div class="timeline-row"><div class="home"></div><div class="min">31'</div><div class="away"><span class="card-icon yellow"></span>Démo Joueur 4</div></div>
+        <div class="timeline-row"><div class="home"></div><div class="min">44'</div><div class="away"><icon name="volleyball" class="text-ink-2" /><span>Démo Joueur 10 <span class="text-ink-3 text-[13px]">(pén.)</span></span></div></div>
+        <div class="timeline-row bg-surface-2"><div class="home"></div><div class="min label !text-ink-2">MT</div><div class="away"></div></div>
+        <div class="timeline-row"><div class="home"><span>Démo Joueur 7 <span class="block text-[12.5px] text-ink-3">passe : Démo Joueur 11</span></span><icon name="volleyball" class="text-ink-2" /></div><div class="min">58'</div><div class="away"></div></div>
+        <div class="timeline-row"><div class="home">Démo Joueur 5<span class="card-icon red"></span></div><div class="min">63'</div><div class="away"></div></div>
+        <div class="timeline-row"><div class="home"></div><div class="min">65'</div><div class="away"><icon name="arrow-left-right" class="text-ink-3" /><span><span class="text-win">Démo Joueur 14</span> <span class="text-ink-3">· Démo Joueur 8</span></span></div></div>
+        <div class="flex gap-2 border-t border-line p-3">
+            <button class="btn btn-secondary btn-sm flex-1"><icon name="share-2" />Partager le score</button>
+            <button class="btn btn-secondary btn-sm flex-1"><icon name="bell" />Suivre le match</button>
+        </div>
+    </section>
+
+    <!-- ============ Classement ============ -->
+    <div class="mt-3 px-4 pb-2 pt-3 md:px-0"><h2 class="text-[22px]">Classement</h2></div>
+    <section class="section" style="--comp:@DesignSamples.ColorZoneA">
+        <header class="section-head" data-accent><span>Zonale 5A</span><span class="sub">Poule A</span></header>
+        <partial name="Components/_StandingsTable" model="DesignSamples.Standings()" />
+    </section>
+
+    <!-- ============ Bracket ============ -->
+    <div class="mt-3 px-4 pb-2 pt-3 md:px-0"><h2 class="text-[22px]">Tableau final</h2></div>
+    <section class="section" style="--comp:@DesignSamples.ColorCoupe">
+        <header class="section-head" data-accent><span>Coupe du Maire</span><span class="sub">défilement horizontal sur mobile</span></header>
+        @{ var t = DesignSamples.Teams; }
+        <div class="bracket">
+            <div class="bracket-round">
+                <p class="label">Quarts</p>
+                @foreach (var (a, b, sa, sb) in new[] { (0, 7, 2, 0), (2, 3, 1, 1), (4, 1, 3, 2), (5, 6, 0, 1) })
+                {
+                    <div class="bracket-match">
+                        <div class="slot @(sa > sb || (a == 2) ? "is-winner" : "is-loser")"><crest team="t[a]" /><span class="truncate">@t[a].ShortName</span><span class="score">@sa@(a == 2 ? "*" : "")</span></div>
+                        <div class="slot @(sb > sa ? "is-winner" : sa == sb ? "is-loser" : "is-loser")"><crest team="t[b]" /><span class="truncate">@t[b].ShortName</span><span class="score">@sb</span></div>
+                    </div>
+                }
+            </div>
+            <div class="bracket-round">
+                <p class="label">Demies</p>
+                <div class="bracket-match">
+                    <div class="slot is-winner"><crest team="t[2]" /><span class="truncate">@t[2].ShortName</span><span class="score">1*</span></div>
+                    <div class="slot is-loser"><crest team="t[4]" /><span class="truncate">@t[4].ShortName</span><span class="score">1</span></div>
+                </div>
+                <div class="bracket-match">
+                    <div class="slot"><crest team="t[5]" /><span class="truncate">@t[5].ShortName</span><span class="score">2</span></div>
+                    <div class="slot"><crest team="t[6]" /><span class="truncate">@t[6].ShortName</span><span class="score">2</span></div>
+                </div>
+            </div>
+            <div class="bracket-round">
+                <p class="label">Finale</p>
+                <div class="bracket-match">
+                    <div class="slot"><crest team="t[2]" /><span class="truncate">@t[2].ShortName</span><span class="score text-ink-3 !text-[13px] !font-sans">sam.</span></div>
+                    <div class="slot text-ink-3"><span class="crest">?</span><span>Vainqueur DF2</span></div>
+                </div>
+            </div>
+        </div>
+        <p class="border-t border-line px-4 py-2.5 text-[12.5px] text-ink-3">* qualifié aux tirs au but</p>
+    </section>
+
+    <!-- ============ Statuts & badges ============ -->
+    <div class="mt-3 px-4 pb-2 pt-3 md:px-0"><h2 class="text-[22px]">Statuts, écussons, forme</h2></div>
+    <section class="section">
+        <div class="row flex-wrap !gap-2 !py-3">
+            @foreach (var s in statuses)
+            {
+                <span class="badge @Display.StatusBadge(s)">@if (s == MatchStatus.Live) {<span class="live-dot"></span>}@Display.StatusLabel(s)</span>
+            }
+        </div>
+        <div class="row flex-wrap !gap-3 !py-3">
+            @foreach (var team in DesignSamples.Teams)
+            {
+                <crest team="team" size="lg" />
+            }
+            <span class="text-[13px] text-ink-3">Écusson généré : initiales + couleurs de l'ASC, texte toujours lisible.</span>
+        </div>
+        <div class="row !py-3">
+            <span class="form" aria-label="Forme"><span class="w">V</span><span class="w">V</span><span class="d">N</span><span class="l">D</span><span class="w">V</span></span>
+            <span class="text-[13px] text-ink-3">5 derniers matchs, du plus ancien au plus récent</span>
+        </div>
+        <div class="row !py-3">
+            <icon name="clock" class="text-ink-3" />
+            <span>Prochain grand match dans <strong class="score text-lg" data-countdown="@DesignSamples.NextBigMatch.ToString("O")">…</strong></span>
+        </div>
+    </section>
+
+    <!-- ============ Boutons & formulaires ============ -->
+    <div class="mt-3 px-4 pb-2 pt-3 md:px-0"><h2 class="text-[22px]">Boutons et formulaires</h2></div>
+    <section class="section">
+        <div class="row flex-wrap !gap-2 !py-3">
+            <button class="btn btn-primary">Enregistrer</button>
+            <button class="btn btn-secondary">Annuler</button>
+            <button class="btn btn-ghost">Plus tard</button>
+            <button class="btn btn-danger">Supprimer</button>
+            <button class="btn btn-secondary btn-icon" aria-label="Suivre"><icon name="star" /></button>
+            <button class="btn btn-primary" disabled>Désactivé</button>
+        </div>
+        <div class="grid gap-4 p-4 sm:grid-cols-2">
+            <div class="field">
+                <label for="d-team">Équipe</label>
+                <input id="d-team" class="input" placeholder="Rechercher une ASC">
+                <span class="hint">Tom Select sera branché ici dans l'admin.</span>
+            </div>
+            <div class="field">
+                <label for="d-score">Score domicile</label>
+                <input id="d-score" class="input num" inputmode="numeric" value="12" aria-invalid="true" aria-describedby="d-score-err">
+                <span class="error" id="d-score-err">Le score doit être compris entre 0 et 30.</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ Mode terrain ============ -->
+    <div class="mt-3 px-4 pb-2 pt-3 md:px-0"><h2 class="text-[22px]">Mode terrain (admin)</h2></div>
+    <section class="section">
+        <div class="grid grid-cols-2 gap-2 p-3">
+            <button class="btn btn-primary btn-xl col-span-2"><icon name="play" />Coup d'envoi</button>
+            <button class="btn btn-secondary btn-xl"><icon name="volleyball" />But</button>
+            <button class="btn btn-secondary btn-xl"><span class="card-icon yellow"></span>Carton</button>
+            <button class="btn btn-secondary btn-xl"><icon name="arrow-left-right" />Changement</button>
+            <button class="btn btn-secondary btn-xl"><icon name="pause" />Mi-temps</button>
+            <button class="btn btn-ghost col-span-2"><icon name="undo-2" />Annuler la dernière action</button>
+        </div>
+    </section>
+
+    <!-- ============ Chargement & bandeaux ============ -->
+    <div class="mt-3 px-4 pb-2 pt-3 md:px-0"><h2 class="text-[22px]">Chargement et bandeaux</h2></div>
+    <section class="section" aria-busy="true" aria-label="Chargement">
+        @for (var i = 0; i < 3; i++)
+        {
+            <div class="match">
+                <span class="skeleton h-3.5 w-9"></span>
+                <div class="grid gap-2"><span class="skeleton h-3.5 w-40"></span><span class="skeleton h-3.5 w-32"></span></div>
+                <div class="grid gap-2"><span class="skeleton h-3.5 w-3"></span><span class="skeleton h-3.5 w-3"></span></div>
+            </div>
+        }
+    </section>
+    <section class="section">
+        <div class="notice !border-0"><icon name="bell" class="text-brand" /><span>Connecte-toi pour recevoir les buts de ton équipe. <a href="#">Se connecter</a></span></div>
+    </section>
+
+    <p class="px-4 py-8 text-center text-[13px] text-ink-3 md:px-0">
+        Voir aussi la <a href="/design/accueil" class="font-semibold text-brand underline-offset-2 hover:underline">maquette de l'accueil</a> (mise en page 3 colonnes sur grand écran).
+    </p>
+</div>

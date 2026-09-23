@@ -1,0 +1,37 @@
+{
+  "name": "kokora-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build:css": "tailwindcss -i Assets/css/app.css -o wwwroot/dist/app.css --minify",
+    "build:js": "node Assets/build.mjs",
+    "build": "npm run build:css && npm run build:js",
+    "watch:css": "tailwindcss -i Assets/css/app.css -o wwwroot/dist/app.css --watch",
+    "watch:js": "node Assets/build.mjs --watch"
+  },
+  "dependencies": {
+    "@microsoft/signalr": "^10.0.11",
+    "alpinejs": "^3.17.4",
+    "chart.js": "^4.5.1",
+    "dayjs": "^1.11.23",
+    "flatpickr": "^4.6.13",
+    "glightbox": "^3.3.1",
+    "html-to-image": "^1.11.13",
+    "htmx.org": "^2.0.11",
+    "notyf": "^3.10.0",
+    "sortablejs": "^1.15.7",
+    "swiper": "^14.2.0",
+    "tom-select": "^2.6.2",
+    "workbox-window": "^7.4.1"
+  },
+  "devDependencies": {
+    "@fontsource/barlow": "^5.3.0",
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "@tailwindcss/cli": "^4.3.3",
+    "esbuild": "^0.28.2",
+    "lucide-static": "^1.47.0",
+    "tailwindcss": "^4.3.3",
+    "workbox-build": "^7.4.1"
+  }
+}

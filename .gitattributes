@@ -1,0 +1,8 @@
+* text=auto eol=lf
+*.cs text eol=lf
+*.cshtml text eol=lf
+*.sln text eol=crlf
+*.woff2 binary
+*.png binary
+*.ico binary
+*.webp binary

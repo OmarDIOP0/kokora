@@ -1,0 +1,60 @@
+@model MatchRowVm
+@{
+    var wide = ViewData["Wide"] is true;
+    var outcome = Model.Outcome;
+    string TeamClass(int side) => outcome == 0 ? "" : outcome == side ? "is-winner" : "is-loser";
+    var label = $"{Model.Home?.Name ?? Model.HomePlaceholder} contre {Model.Away?.Name ?? Model.AwayPlaceholder}";
+}
+<a href="@Model.Url" class="match @(wide ? "wide" : "") @(Model.IsLive ? "is-live" : "")"
+   data-match="@Model.Id" aria-label="@label, @Display.StatusLabel(Model.Status)">
+    <div class="match-time num">
+        @if (Model.Status == MatchStatus.Live)
+        {
+            <span class="inline-flex items-center gap-1.5"><span class="live-dot"></span><span class="minute" data-minute>@Model.Minute</span></span>
+        }
+        else if (Model.Status == MatchStatus.Scheduled)
+        {
+            <span class="wide-hide">@(Model.KickoffAt is { } k ? KokoraTime.Hour(k) : "—")</span>
+        }
+        else
+        {
+            <span title="@Display.StatusLabel(Model.Status)">@Display.StatusShort(Model.Status)</span>
+        }
+        @if (Model.HomePenalties.HasValue && Model.AwayPenalties.HasValue)
+        {
+            <span class="status">tab @Model.HomePenalties-@Model.AwayPenalties</span>
+        }
+    </div>
+
+    <div class="match-teams">
+        <div class="match-team home @TeamClass(1)">
+            <crest team="Model.Home" />
+            <span class="name">@(Model.Home?.Name ?? Model.HomePlaceholder)</span>
+        </div>
+        <div class="match-team away @TeamClass(-1)">
+            <crest team="Model.Away" />
+            <span class="name">@(Model.Away?.Name ?? Model.AwayPlaceholder)</span>
+        </div>
+    </div>
+
+    @if (Model.ShowScore)
+    {
+        <div class="scoreline" data-score>
+            <span>@Model.HomeScore</span><span class="sep">-</span><span>@Model.AwayScore</span>
+        </div>
+        <div class="match-scores" data-score>
+            <span class="score @(outcome == -1 ? "text-ink-3" : "")">@Model.HomeScore</span>
+            <span class="score @(outcome == 1 ? "text-ink-3" : "")">@Model.AwayScore</span>
+        </div>
+    }
+    else
+    {
+        <div class="scoreline text-ink-3 !text-base">@(Model.KickoffAt is { } k ? KokoraTime.Hour(k) : "-")</div>
+        <div class="match-scores" aria-hidden="true">
+            @if (Model.Status is MatchStatus.Postponed or MatchStatus.Replay)
+            {
+                <span class="badge warn">@Display.StatusLabel(Model.Status)</span>
+            }
+        </div>
+    }
+</a>

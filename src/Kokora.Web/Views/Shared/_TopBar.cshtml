@@ -1,0 +1,31 @@
+@{
+    var nav = ViewData["Nav"] as string;
+    string? Current(string key) => nav == key ? "page" : null;
+}
+<header class="topbar">
+    <div class="mx-auto flex h-14 max-w-[1280px] items-center gap-2 pl-4 pr-1 md:pr-4">
+        <a href="/" class="wordmark mr-4" aria-label="Kokora, accueil">Koko<b>ra</b></a>
+
+        <nav class="hidden md:flex" aria-label="Navigation principale">
+            <a href="/" class="navlink" aria-current="@Current("matchs")"><icon name="calendar-days" />Matchs</a>
+            <a href="/classements" class="navlink" aria-current="@Current("classements")"><icon name="list-ordered" />Classements</a>
+            <a href="/stats" class="navlink" aria-current="@Current("stats")"><icon name="chart-no-axes-column" />Stats</a>
+            <a href="/equipes" class="navlink" aria-current="@Current("equipes")"><icon name="shield" />Équipes</a>
+            <a href="/infos" class="navlink" aria-current="@Current("infos")"><icon name="newspaper" />Infos</a>
+        </nav>
+
+        <div class="ml-auto flex items-center">
+            <a href="/recherche" class="btn btn-ghost btn-icon" aria-label="Rechercher une équipe ou un joueur">
+                <icon name="search" />
+            </a>
+            <button type="button" class="btn btn-ghost btn-icon" x-data @@click="$store.theme.toggle()"
+                    data-theme-toggle aria-label="Basculer le mode sombre">
+                <icon name="moon" class="dark-hide" />
+                <icon name="sun" class="dark-show" />
+            </button>
+            <a href="/compte" class="btn btn-ghost btn-icon hidden md:inline-flex" aria-label="Mon compte">
+                <icon name="circle-user" />
+            </a>
+        </div>
+    </div>
+</header>

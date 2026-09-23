@@ -485,3 +485,5 @@ $RECYCLE.BIN/
 node_modules/
 src/Kokora.Web/wwwroot/dist/
 src/Kokora.Web/wwwroot/uploads/
+src/Kokora.Web/wwwroot/fonts/
+src/Kokora.Web/Icons/

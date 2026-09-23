@@ -1,0 +1,11 @@
+@{
+    var nav = ViewData["Nav"] as string;
+    string? Current(string key) => nav == key ? "page" : null;
+}
+<nav class="bottomnav" aria-label="Navigation principale">
+    <a href="/" aria-current="@Current("matchs")"><icon name="calendar-days" />Matchs</a>
+    <a href="/classements" aria-current="@Current("classements")"><icon name="list-ordered" />Classements</a>
+    <a href="/stats" aria-current="@Current("stats")"><icon name="chart-no-axes-column" />Stats</a>
+    <a href="/infos" aria-current="@Current("infos")"><icon name="newspaper" />Infos</a>
+    <a href="/plus" aria-current="@Current("plus")"><icon name="menu" />Plus</a>
+</nav>

@@ -1,5 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
+  <PropertyGroup>
+    <UserSecretsId>kokora-web-9c1f4e2a</UserSecretsId>
+    <DefaultItemExcludes>$(DefaultItemExcludes);node_modules\**;Assets\**</DefaultItemExcludes>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Kokora.Infrastructure\Kokora.Infrastructure.csproj" />
   </ItemGroup>
@@ -11,5 +16,17 @@
     </PackageReference>
   </ItemGroup>
 
+  <!-- Icônes Lucide lues par le tag helper <icon> -->
+  <ItemGroup>
+    <Content Include="Icons\**\*.svg" CopyToPublishDirectory="PreserveNewest" CopyToOutputDirectory="Never" />
+  </ItemGroup>
+
+  <!-- Front : installe les paquets npm et construit CSS/JS si nécessaire (et toujours en Release). -->
+  <Target Name="NpmInstall" BeforeTargets="NpmBuild" Condition="!Exists('node_modules')">
+    <Exec Command="npm ci" />
+  </Target>
+  <Target Name="NpmBuild" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release' Or !Exists('wwwroot\dist\app.css') Or !Exists('Icons\x.svg')">
+    <Exec Command="npm run build" />
+  </Target>
 
 </Project>

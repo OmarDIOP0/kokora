@@ -33,6 +33,10 @@
   </Target>
   <Target Name="NpmBuild" BeforeTargets="BeforeBuild" Condition="'$(Configuration)' == 'Release' Or !Exists('wwwroot\dist\app.css') Or !Exists('Icons\x.svg')">
     <Exec Command="npm run build" />
+    <!-- Icônes tout juste générées (build neuf, ex. Docker) : le motif ci-dessus ne les a pas encore vues. -->
+    <ItemGroup>
+      <Content Include="Icons\**\*.svg" Exclude="@(Content)" CopyToPublishDirectory="PreserveNewest" CopyToOutputDirectory="Never" />
+    </ItemGroup>
   </Target>
 
 </Project>

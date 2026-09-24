@@ -1,0 +1,86 @@
+@model SeasonsPageVm
+@{
+    ViewData["Title"] = "Saisons et compétitions";
+}
+
+<div class="page-head">
+    <div>
+        <p class="label">Saison</p>
+        <h1>Saisons et compétitions</h1>
+    </div>
+    <a href="/admin/saisons/nouvelle" class="btn btn-primary btn-sm"><icon name="plus" />Nouvelle saison</a>
+</div>
+
+@if (Model.Seasons.Count == 0)
+{
+    <section class="section">
+        <div class="empty">
+            <strong>Aucune saison</strong>
+            <p>Une saison (ex. 2026) regroupe les compétitions de l'hivernage.</p>
+            <a href="/admin/saisons/nouvelle" class="btn btn-primary mt-5">Créer la saison</a>
+        </div>
+    </section>
+}
+
+@foreach (var s in Model.Seasons)
+{
+    <section class="section">
+        <header class="section-head !min-h-14">
+            <div class="min-w-0 flex-1">
+                <span class="font-display text-xl font-bold">@s.Name</span>
+                @if (s.IsCurrent) { <span class="badge brand ml-2">En cours</span> }
+                @if (s.IsDemo) { <span class="badge warn ml-1">Démo</span> }
+                @if (s.Id == Model.WorkingSeasonId && !s.IsCurrent) { <span class="badge ml-1">Saison de travail</span> }
+            </div>
+            <div class="flex items-center gap-1" x-data="{ menu: false }">
+                <a href="/admin/saisons/@s.Id/modifier" class="btn btn-ghost btn-icon" aria-label="Modifier la saison"><icon name="pencil" /></a>
+                <div class="relative">
+                    <button type="button" class="btn btn-ghost btn-icon" @@click="menu = !menu" @@click.outside="menu = false" aria-label="Autres actions" :aria-expanded="menu"><icon name="ellipsis" /></button>
+                    <div x-show="menu" x-cloak class="absolute right-0 top-11 z-20 w-60 overflow-hidden rounded-md border border-line bg-surface py-1 shadow-lg">
+                        @if (!s.IsCurrent)
+                        {
+                            <form method="post" action="/admin/saisons/@s.Id/en-cours"><button class="w-full px-4 py-2.5 text-left text-[14px] hover:bg-surface-2">Définir comme saison en cours</button></form>
+                        }
+                        @if (s.Competitions.Count == 0)
+                        {
+                            <form method="post" action="/admin/saisons/@s.Id/structure-type"><button class="w-full px-4 py-2.5 text-left text-[14px] hover:bg-surface-2">Créer la structure type</button></form>
+                        }
+                        <form method="post" action="/admin/saisons/@s.Id/supprimer" data-confirm="Supprimer la saison « @s.Name » et toutes ses compétitions ?">
+                            <button class="w-full px-4 py-2.5 text-left text-[14px] text-loss hover:bg-surface-2">Supprimer la saison</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        @if (s.Competitions.Count == 0)
+        {
+            <div class="flex flex-wrap items-center gap-3 px-4 py-4">
+                <p class="flex-1 text-[14px] text-ink-2">Aucune compétition. Créez la structure habituelle de Nguékokh en un clic : Zonales 5A et 5B, 4 Grandes de chaque zone, Coupe du Maire. Tout reste modifiable.</p>
+                <form method="post" action="/admin/saisons/@s.Id/structure-type">
+                    <button class="btn btn-primary btn-sm"><icon name="layers" />Structure type</button>
+                </form>
+            </div>
+        }
+        else
+        {
+            <ul data-sortable="/admin/saisons/@s.Id/competitions/ordre">
+                @foreach (var c in s.Competitions)
+                {
+                    <li data-id="@c.Id" class="flex items-center border-b border-line" style="--comp:@c.Color">
+                        <span class="drag-handle" data-handle aria-label="Déplacer"><icon name="grip-vertical" /></span>
+                        <a href="/admin/competitions/@c.Id" class="flex min-h-12 flex-1 items-center gap-3 pr-4 hover:bg-surface-2">
+                            <span class="comp-swatch"></span>
+                            <span class="flex-1 font-medium">@c.Name</span>
+                            @if (!c.IsPublished) { <span class="badge"><icon name="eye-off" />Masquée</span> }
+                            <icon name="chevron-right" class="text-ink-3" />
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+        <div class="px-2 py-1.5">
+            <a href="/admin/saisons/@s.Id/competitions/nouvelle" class="btn btn-ghost btn-sm"><icon name="plus" />Ajouter une compétition</a>
+        </div>
+    </section>
+}

@@ -1,0 +1,65 @@
+@model ImportPageVm
+@{
+    ViewData["Title"] = "Importer des joueurs";
+}
+
+<div class="page-head">
+    <div>
+        <nav class="crumbs"><a href="/admin/joueurs">Joueurs</a></nav>
+        <h1>Importer des joueurs</h1>
+        <p class="mt-1 text-[14px] text-ink-2">Les joueurs sont rattachés à leur équipe pour la saison « @Model.SeasonName ».</p>
+    </div>
+</div>
+
+@if (Model.Report is { } r)
+{
+    <section class="section">
+        <header class="section-head"><icon name="check" class="text-win" /><span>Import terminé</span></header>
+        <div class="grid grid-cols-3">
+            <div class="stat border-r border-line"><div class="label">Créés</div><div class="v mt-1 text-win">@r.Created</div></div>
+            <div class="stat border-r border-line"><div class="label">Mis à jour</div><div class="v mt-1">@r.Updated</div></div>
+            <div class="stat"><div class="label">Ignorés</div><div class="v mt-1 @(r.Errors.Count > 0 ? "text-loss" : "")">@r.Errors.Count</div></div>
+        </div>
+        @if (r.Errors.Count > 0)
+        {
+            <ul class="border-t border-line text-[14px]">
+                @foreach (var e in r.Errors)
+                {
+                    <li class="row !min-h-10 text-loss"><icon name="circle-alert" />@e</li>
+                }
+            </ul>
+        }
+        <div class="form-actions">
+            <a href="/admin/joueurs" class="btn btn-primary">Voir les joueurs</a>
+            <a href="/admin/joueurs/import" class="btn btn-ghost">Importer un autre fichier</a>
+        </div>
+    </section>
+}
+else
+{
+    <section class="section">
+        <header class="section-head"><span>1. Préparer le fichier</span></header>
+        <div class="grid gap-3 p-4 text-[14px] text-ink-2">
+            <p>Une ligne par joueur. Colonnes reconnues (l'ordre n'a pas d'importance) :</p>
+            <p class="flex flex-wrap gap-1.5">
+                @foreach (var c in Kokora.Application.Abstractions.IPlayerFileReader.Columns)
+                {
+                    <code class="rounded-sm bg-surface-2 px-2 py-0.5 text-[13px] text-ink">@c</code>
+                }
+            </p>
+            <p>« Prénom » et « Nom » sont obligatoires. « Équipe » accepte le nom complet ou le nom court. « Poste » : Gardien, Défenseur, Milieu ou Attaquant (ou G, D, M, A).</p>
+            <div><a href="/admin/joueurs/modele.csv" class="btn btn-secondary btn-sm"><icon name="download" />Télécharger le modèle</a></div>
+        </div>
+    </section>
+    <section class="section">
+        <header class="section-head"><span>2. Envoyer le fichier</span></header>
+        <form method="post" action="/admin/joueurs/import" enctype="multipart/form-data" class="grid gap-3 p-4">
+            <div class="field">
+                <label for="file">Fichier Excel (.xlsx) ou CSV</label>
+                <input type="file" id="file" name="file" class="input file" accept=".xlsx,.csv,text/csv" required>
+                <span class="hint">Un joueur déjà présent dans la même équipe (même prénom et nom) est mis à jour, pas dupliqué.</span>
+            </div>
+            <div><button class="btn btn-primary"><icon name="upload" />Importer</button></div>
+        </form>
+    </section>
+}

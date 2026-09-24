@@ -1,0 +1,66 @@
+@model Kokora.Domain.Competitions.Competition
+@{
+    ViewData["Title"] = Model.Name;
+    var s = Model.Scoring;
+}
+
+<div class="page-head">
+    <div>
+        <nav class="crumbs"><a href="/admin/saisons">@Model.Season.Name</a></nav>
+        <h1 class="flex items-center gap-2" style="--comp:@Model.Color"><span class="comp-swatch !h-4 !w-4"></span>@Model.Name</h1>
+    </div>
+    <div class="flex flex-wrap gap-2">
+        <a href="/admin/competitions/@Model.Id/modifier" class="btn btn-secondary btn-sm"><icon name="settings" />Réglages</a>
+        <form method="post" action="/admin/competitions/@Model.Id/supprimer" data-confirm="Supprimer « @Model.Name » et toutes ses phases ?">
+            <button class="btn btn-ghost btn-sm text-loss"><icon name="trash-2" />Supprimer</button>
+        </form>
+    </div>
+</div>
+
+<section class="section">
+    <header class="section-head"><span>Phases</span><span class="sub">dans l'ordre de la compétition</span></header>
+    @if (Model.Phases.Count == 0)
+    {
+        <div class="empty !py-6">Aucune phase. Ajoutez par exemple une phase de poules puis une phase finale.</div>
+    }
+    <ul data-sortable="/admin/competitions/@Model.Id/phases/ordre">
+        @foreach (var p in Model.Phases.OrderBy(p => p.Order))
+        {
+            <li data-id="@p.Id" class="flex items-center border-b border-line">
+                <span class="drag-handle" data-handle aria-label="Déplacer"><icon name="grip-vertical" /></span>
+                <a href="/admin/phases/@p.Id" class="flex min-h-14 flex-1 items-center gap-3 pr-4 hover:bg-surface-2">
+                    <div class="min-w-0 flex-1">
+                        <div class="font-semibold">@p.Name</div>
+                        <div class="text-[13px] text-ink-3">
+                            @Labels.Of(p.Type) · @Labels.Of(p.Legs)
+                            @if (p.Type == PhaseType.League) { <text> · @p.Groups.Count poule@(p.Groups.Count > 1 ? "s" : "")</text> }
+                            else { <text> · @p.Rounds.Count tour@(p.Rounds.Count > 1 ? "s" : "")</text> }
+                        </div>
+                    </div>
+                    <icon name="chevron-right" class="text-ink-3" />
+                </a>
+            </li>
+        }
+    </ul>
+    <div class="px-2 py-1.5">
+        <a href="/admin/competitions/@Model.Id/phases/nouvelle" class="btn btn-ghost btn-sm"><icon name="plus" />Ajouter une phase</a>
+    </div>
+</section>
+
+<section class="section">
+    <header class="section-head"><span>Règles</span><a href="/admin/competitions/@Model.Id/modifier" class="ml-auto text-[13px] font-semibold text-brand">Modifier</a></header>
+    <dl class="grid text-[14px] sm:grid-cols-2">
+        <div class="row"><dt class="flex-1 text-ink-2">Points (V / N / D)</dt><dd class="num font-semibold">@s.PointsForWin / @s.PointsForDraw / @s.PointsForLoss</dd></div>
+        <div class="row"><dt class="flex-1 text-ink-2">Forfait</dt><dd class="num font-semibold">@s.ForfeitGoalsFor-@s.ForfeitGoalsAgainst, @s.PointsForForfeitLoss pt</dd></div>
+        <div class="row"><dt class="flex-1 text-ink-2">Départage</dt><dd class="text-right font-semibold">@string.Join(", ", s.TieBreakers.Select(Labels.Of))</dd></div>
+        <div class="row"><dt class="flex-1 text-ink-2">Suspensions</dt><dd class="text-right font-semibold">
+            @if (Model.Suspensions.Enabled)
+            {
+                @($"{Model.Suspensions.YellowCardsThreshold} jaunes = {Model.Suspensions.MatchesForYellowAccumulation} m. · rouge = {Model.Suspensions.MatchesForDirectRed} m.")
+            }
+            else { <text>Désactivées</text> }
+        </dd></div>
+        <div class="row"><dt class="flex-1 text-ink-2">Durée</dt><dd class="num font-semibold">2 × @Model.HalfDurationMinutes min</dd></div>
+        <div class="row"><dt class="flex-1 text-ink-2">Visible sur le site</dt><dd class="font-semibold">@(Model.IsPublished ? "Oui" : "Non")</dd></div>
+    </dl>
+</section>

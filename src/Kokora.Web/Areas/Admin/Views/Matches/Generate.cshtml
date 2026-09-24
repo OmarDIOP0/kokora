@@ -1,0 +1,52 @@
+@model GenerateFixturesVm
+@{
+    var g = Model.Group;
+    ViewData["Title"] = $"Calendrier · {g.Name}";
+    var n = g.Teams.Count;
+    var perLeg = n < 2 ? 0 : n * (n - 1) / 2;
+}
+
+<div class="page-head">
+    <div>
+        <nav class="crumbs"><a href="/admin/competitions/@g.Phase.CompetitionId">@g.Phase.Competition.Name</a><span>/</span><a href="/admin/phases/@g.PhaseId">@g.Phase.Name</a></nav>
+        <h1>Générer le calendrier · @g.Name</h1>
+        <p class="mt-1 text-[14px] text-ink-2">@n équipes · @perLeg matchs en aller simple, @(perLeg * 2) en aller-retour. Chaque équipe joue une fois par journée.</p>
+    </div>
+</div>
+
+@if (n < 2)
+{
+    <section class="section"><div class="empty"><strong>Pas assez d'équipes</strong>Ajoutez au moins deux équipes à la poule.
+        <div class="mt-4"><a class="btn btn-primary" href="/admin/poules/@g.Id/modifier">Modifier la poule</a></div></div></section>
+}
+else
+{
+    <form method="post" action="/admin/poules/@g.Id/calendrier" novalidate>
+        <div asp-validation-summary="ModelOnly" class="error-summary mb-3"></div>
+        <section class="section">
+            <header class="section-head"><span>Paramètres</span></header>
+            <div class="form-grid cols-2">
+                <k-field asp-for="Input.FirstDate" type="date" />
+                <k-field asp-for="Input.DaysBetweenMatchdays" inputmode="numeric" />
+                <k-field asp-for="Input.FirstKickoff" type="time" />
+                <k-field asp-for="Input.MinutesBetweenMatches" inputmode="numeric" hint="0 = tous les matchs de la journée à la même heure." />
+                <k-field asp-for="Input.StadiumId" items="Model.Stadiums" empty="Non précisé" />
+                <k-field asp-for="Input.HomeAndAway" />
+                @if (Model.ExistingMatches > 0)
+                {
+                    <k-field asp-for="Input.ReplaceUnplayed" class="span-2"
+                             hint="@($"{Model.ExistingMatches} matchs existent déjà dans cette poule. Les matchs joués sont conservés.")" />
+                }
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" hx-post="/admin/poules/@g.Id/calendrier/apercu" hx-target="#preview" hx-include="closest form">
+                    <icon name="eye" />Aperçu
+                </button>
+                <button class="btn btn-primary" data-confirm="Créer ces matchs ?"><icon name="shuffle" />Créer les matchs</button>
+            </div>
+        </section>
+        <div id="preview">
+            <partial name="_FixturePreview" model="Model" />
+        </div>
+    </form>
+}

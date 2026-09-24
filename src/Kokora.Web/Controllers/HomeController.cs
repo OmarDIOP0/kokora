@@ -12,7 +12,8 @@ public class HomeController : Controller
         return View();
     }
 
-    [HttpGet("/erreur")]
+    // Toutes méthodes : la page d'erreur est rejouée avec la méthode de la requête d'origine (ex. POST).
+    [Route("/erreur")]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error()
     {

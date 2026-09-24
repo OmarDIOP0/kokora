@@ -1,0 +1,57 @@
+@inject AdminSeason AdminSeason
+@inject Kokora.Application.Abstractions.IAppDbContext Db
+@using Microsoft.EntityFrameworkCore
+@{
+    var nav = ViewData["AdminNav"] as string;
+    string? Current(string key) => nav == key ? "page" : null;
+    var season = await AdminSeason.GetAsync();
+    var seasons = await Db.Seasons.AsNoTracking().OrderByDescending(s => s.Year).Select(s => new { s.Id, s.Name, s.IsCurrent }).ToListAsync();
+}
+<div class="flex h-14 flex-none items-center gap-2 border-b border-line px-4">
+    <a href="/admin" class="wordmark">Koko<b>ra</b></a>
+    <span class="badge brand">Admin</span>
+    <button type="button" class="btn btn-ghost btn-icon ml-auto hidden lg:inline-flex" x-data @@click="$store.theme.toggle()" aria-label="Basculer le mode sombre">
+        <icon name="moon" class="dark-hide" /><icon name="sun" class="dark-show" />
+    </button>
+</div>
+
+@if (seasons.Count > 0)
+{
+    <form method="post" action="/admin/saisons/choisir" class="border-b border-line p-3">
+        <label for="season-switch" class="label mb-1.5 block">Saison de travail</label>
+        <select id="season-switch" name="id" class="input !min-h-10 !text-[15px]" onchange="this.form.requestSubmit()">
+            @foreach (var s in seasons)
+            {
+                <option value="@s.Id" selected="@(season?.Id == s.Id)">@(s.IsCurrent ? $"{s.Name} · en cours" : s.Name)</option>
+            }
+        </select>
+        <noscript><button class="btn btn-secondary btn-sm mt-2">Changer</button></noscript>
+    </form>
+}
+
+<nav class="admin-nav flex-1 py-2">
+    <a href="/admin" aria-current="@Current("dashboard")"><icon name="layout-dashboard" />Tableau de bord</a>
+
+    <span class="label">Saison</span>
+    <a href="/admin/saisons" aria-current="@Current("saisons")"><icon name="trophy" />Saisons et compétitions</a>
+    <a href="/admin/matchs" aria-current="@Current("matchs")"><icon name="calendar-days" />Calendrier</a>
+
+    <span class="label">Données</span>
+    <a href="/admin/equipes" aria-current="@Current("equipes")"><icon name="shield" />Équipes (ASC)</a>
+    <a href="/admin/joueurs" aria-current="@Current("joueurs")"><icon name="users" />Joueurs</a>
+    <a href="/admin/lieux" aria-current="@Current("lieux")"><icon name="map-pin" />Stades et arbitres</a>
+
+    <span class="label">Système</span>
+    <a href="/admin/demo" aria-current="@Current("demo")"><icon name="flask-conical" />Données de démo</a>
+    <a href="/admin/audit" aria-current="@Current("audit")"><icon name="history" />Journal d'audit</a>
+</nav>
+
+<div class="border-t border-line p-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
+    <div class="mb-2 truncate px-1 text-[13px] text-ink-3">Connecté : <span class="font-semibold text-ink-2">@User.Identity?.Name</span></div>
+    <div class="flex gap-2">
+        <a href="/" class="btn btn-secondary btn-sm flex-1"><icon name="external-link" />Voir le site</a>
+        <form method="post" action="/compte/deconnexion">
+            <button class="btn btn-ghost btn-sm" aria-label="Se déconnecter"><icon name="log-out" /></button>
+        </form>
+    </div>
+</div>

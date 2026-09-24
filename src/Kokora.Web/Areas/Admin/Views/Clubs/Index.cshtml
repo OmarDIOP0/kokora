@@ -1,0 +1,29 @@
+@model List<Kokora.Domain.Clubs.Club>
+@{
+    ViewData["Title"] = "Équipes";
+    var zone = ViewData["Zone"] as string;
+}
+
+<div class="page-head">
+    <div>
+        <p class="label">Données</p>
+        <h1>Équipes (ASC)</h1>
+    </div>
+    <a href="/admin/equipes/nouvelle" class="btn btn-primary btn-sm"><icon name="plus" />Nouvelle équipe</a>
+</div>
+
+<section class="section">
+    <form class="flex flex-wrap gap-2 p-3" hx-get="/admin/equipes" hx-target="#club-list" hx-trigger="input changed delay:250ms from:input, change from:select" hx-push-url="true">
+        <input type="search" name="q" value="@ViewData["Search"]" class="input min-w-0 flex-1" placeholder="Rechercher une équipe ou un quartier" aria-label="Rechercher">
+        <select name="zone" class="input !w-auto" aria-label="Zone">
+            <option value="">Toutes les zones</option>
+            @foreach (var z in Labels.Zones)
+            {
+                <option value="@z.Value" selected="@(z.Value == zone)">@z.Text</option>
+            }
+        </select>
+    </form>
+    <div id="club-list">
+        <partial name="_List" model="Model" />
+    </div>
+</section>

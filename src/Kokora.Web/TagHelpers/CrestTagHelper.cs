@@ -43,7 +43,7 @@ public class CrestTagHelper : TagHelper
 
         var (bg, fg) = Colors(Team.Color, Team.Color2);
         output.Attributes.SetAttribute("style", $"--c1:{bg};--c2:{fg}");
-        output.Content.SetContent(ClubInitials.From(Team.ShortName.Length > 0 ? Team.ShortName : Team.Name));
+        output.Content.SetContent(ClubInitials.From(string.IsNullOrEmpty(Team.ShortName) ? Team.Name ?? "?" : Team.ShortName));
     }
 
     /// <summary>Texte lisible sur la couleur principale : la couleur secondaire si elle contraste assez, sinon noir ou blanc.</summary>

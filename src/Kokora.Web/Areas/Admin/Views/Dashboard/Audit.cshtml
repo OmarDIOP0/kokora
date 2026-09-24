@@ -1,0 +1,64 @@
+@model AuditPageVm
+@{
+    ViewData["Title"] = "Journal d'audit";
+    var f = Model.Filter;
+    var pages = (int)Math.Ceiling(Model.Total / (double)f.PageSize);
+    string PageUrl(int p) => $"/admin/audit?type={Uri.EscapeDataString(f.EntityType ?? "")}&user={Uri.EscapeDataString(f.User ?? "")}&day={f.Day:yyyy-MM-dd}&page={p}";
+}
+
+<div class="page-head">
+    <div>
+        <p class="label">Système</p>
+        <h1>Journal d'audit</h1>
+        <p class="mt-1 text-[14px] text-ink-2">Qui a modifié quoi, et quand. Utile en cas de contestation d'un résultat.</p>
+    </div>
+</div>
+
+<section class="section">
+    <form method="get" class="grid gap-3 p-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
+        <div class="field">
+            <label for="type">Élément</label>
+            <select id="type" name="type" class="input">
+                <option value="">Tous</option>
+                @foreach (var t in Model.EntityTypes)
+                {
+                    <option value="@t" selected="@(t == f.EntityType)">@Labels.Entity(t)</option>
+                }
+            </select>
+        </div>
+        <div class="field"><label for="user">Utilisateur</label><input id="user" name="user" class="input" value="@f.User"></div>
+        <div class="field"><label for="day">Jour</label><input id="day" name="day" class="input" data-date value="@f.Day?.ToString("yyyy-MM-dd")"></div>
+        <button class="btn btn-secondary">Filtrer</button>
+    </form>
+</section>
+
+<section class="section">
+    <header class="section-head"><span>@Model.Total modification@(Model.Total > 1 ? "s" : "")</span></header>
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty">Aucune modification pour ces critères.</div>
+    }
+    @foreach (var a in Model.Items)
+    {
+        <details class="border-b border-line last:border-b-0">
+            <summary class="row !border-0 cursor-pointer list-none">
+                <span class="badge @(a.Action == "Deleted" ? "loss" : a.Action == "Added" ? "win" : "")">@Labels.AuditAction(a.Action)</span>
+                <span class="min-w-0 flex-1 truncate">@Labels.Entity(a.EntityType) <span class="text-ink-3">#@a.EntityId</span></span>
+                <span class="hidden text-[13px] text-ink-2 sm:block">@(a.UserName ?? "Système")</span>
+                <span class="num text-[12.5px] text-ink-3">@KokoraTime.ToLocal(a.At).ToString("dd/MM HH:mm")</span>
+            </summary>
+            <div class="px-4 pb-3 text-[13px]">
+                <div class="mb-1 text-ink-3">@KokoraTime.Long(a.At) · @(a.UserName ?? "Système") · IP @(a.IpAddress ?? "?")</div>
+                <pre class="overflow-x-auto whitespace-pre-wrap break-all rounded-sm bg-surface-2 p-3 text-[12px]">@a.Changes</pre>
+            </div>
+        </details>
+    }
+    @if (pages > 1)
+    {
+        <nav class="flex items-center justify-between border-t border-line px-4 py-2 text-[13.5px]" aria-label="Pagination">
+            @if (f.Page > 1) { <a class="btn btn-ghost btn-sm" href="@PageUrl(f.Page - 1)"><icon name="chevron-left" />Précédent</a> } else { <span></span> }
+            <span class="text-ink-3">Page @f.Page / @pages</span>
+            @if (f.Page < pages) { <a class="btn btn-ghost btn-sm" href="@PageUrl(f.Page + 1)">Suivant<icon name="chevron-right" /></a> } else { <span></span> }
+        </nav>
+    }
+</section>

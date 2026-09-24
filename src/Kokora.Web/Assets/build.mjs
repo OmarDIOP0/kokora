@@ -31,6 +31,7 @@ const options = {
   entryPoints: {
     core: 'Assets/js/core.js',
     design: 'Assets/js/design.js',
+    admin: 'Assets/js/admin.js',
   },
   absWorkingDir: root,
   outdir: 'wwwroot/dist',

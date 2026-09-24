@@ -1,0 +1,32 @@
+@model PlayersPageVm
+@{
+    ViewData["Title"] = "Joueurs";
+}
+
+<div class="page-head">
+    <div>
+        <p class="label">@ViewData["SeasonName"]</p>
+        <h1>Joueurs</h1>
+    </div>
+    <div class="flex flex-wrap gap-2">
+        <a href="/admin/joueurs/import" class="btn btn-secondary btn-sm"><icon name="file-spreadsheet" />Importer</a>
+        <a href="/admin/joueurs/nouveau@(Model.ClubId is > 0 ? $"?equipe={Model.ClubId}" : "")" class="btn btn-primary btn-sm"><icon name="plus" />Nouveau joueur</a>
+    </div>
+</div>
+
+<section class="section">
+    <form class="flex flex-wrap gap-2 p-3" hx-get="/admin/joueurs" hx-target="#player-list" hx-trigger="input changed delay:250ms from:input, change from:select" hx-push-url="true">
+        <input type="search" name="q" value="@Model.Search" class="input min-w-0 flex-1" placeholder="Nom, prénom ou surnom" aria-label="Rechercher un joueur">
+        <select name="equipe" class="input !w-auto max-w-[50%]" aria-label="Équipe">
+            <option value="">Toutes les équipes</option>
+            <option value="-1" selected="@(Model.ClubId == -1)">Sans équipe cette saison</option>
+            @foreach (var c in Model.Clubs)
+            {
+                <option value="@c.Value" selected="@(c.Value == Model.ClubId?.ToString())">@c.Text</option>
+            }
+        </select>
+    </form>
+    <div id="player-list">
+        <partial name="_List" model="Model" />
+    </div>
+</section>

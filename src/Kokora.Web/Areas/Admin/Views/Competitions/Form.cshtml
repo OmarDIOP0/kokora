@@ -1,0 +1,89 @@
+@model CompetitionFormVm
+@{
+    var input = Model.Input;
+    ViewData["Title"] = input.Id == 0 ? "Nouvelle compétition" : input.Name;
+    // Critères actifs dans l'ordre choisi, puis les inactifs.
+    var all = new[] { TieBreaker.GoalDifference, TieBreaker.GoalsFor, TieBreaker.HeadToHead, TieBreaker.FairPlay, TieBreaker.Wins };
+    var ordered = input.TieBreakers.Where(all.Contains).Concat(all.Except(input.TieBreakers)).ToList();
+}
+
+<div class="page-head">
+    <div>
+        <nav class="crumbs"><a href="/admin/saisons">@Model.SeasonName</a>@if (input.Id != 0) {<span>/</span><a href="/admin/competitions/@input.Id">@input.Name</a>}</nav>
+        <h1>@(input.Id == 0 ? "Nouvelle compétition" : "Réglages")</h1>
+    </div>
+</div>
+
+<form method="post" action="/admin/competitions/enregistrer" novalidate>
+    <input type="hidden" asp-for="Input.Id">
+    <input type="hidden" asp-for="Input.SeasonId">
+    <div asp-validation-summary="ModelOnly" class="error-summary mb-3"></div>
+
+    <section class="section">
+        <header class="section-head"><span>Général</span></header>
+        <div class="form-grid cols-2">
+            <k-field asp-for="Input.Name" hint="Ex. « Zonale 5A », « Coupe du Maire »." />
+            <k-field asp-for="Input.ShortName" hint="Affiché sur mobile, ex. « 5A »." />
+            <k-field asp-for="Input.Color" type="color" hint="Liseré qui repère la compétition dans les listes." />
+            <k-field asp-for="Input.IsPublished" />
+            <k-field asp-for="Input.Description" type="textarea" class="span-2" />
+        </div>
+    </section>
+
+    <section class="section">
+        <header class="section-head"><span>Points</span></header>
+        <div class="form-grid grid-cols-3">
+            <k-field asp-for="Input.PointsForWin" inputmode="numeric" />
+            <k-field asp-for="Input.PointsForDraw" inputmode="numeric" />
+            <k-field asp-for="Input.PointsForLoss" inputmode="numeric" />
+        </div>
+        <p class="fieldset-title label">Forfait</p>
+        <div class="form-grid grid-cols-3">
+            <k-field asp-for="Input.PointsForForfeitLoss" label="Points du forfait" inputmode="numeric" />
+            <k-field asp-for="Input.ForfeitGoalsFor" label="Score vainqueur" inputmode="numeric" />
+            <k-field asp-for="Input.ForfeitGoalsAgainst" label="Score forfait" inputmode="numeric" />
+        </div>
+    </section>
+
+    <section class="section">
+        <header class="section-head"><span>Départage</span><span class="sub">après les points, dans cet ordre</span></header>
+        <p class="px-4 pt-3 text-[13.5px] text-ink-2">Glissez pour changer l'ordre, décochez un critère pour ne pas l'utiliser.</p>
+        <ul data-sortable class="py-2">
+            @for (var i = 0; i < ordered.Count; i++)
+            {
+                var t = ordered[i];
+                <li data-id="@((int)t)" class="flex items-center border-b border-line last:border-b-0">
+                    <span class="drag-handle" data-handle aria-label="Déplacer"><icon name="grip-vertical" /></span>
+                    <label class="check flex-1 pr-4">
+                        <input type="checkbox" name="Input.TieBreakers" value="@t" checked="@input.TieBreakers.Contains(t)">
+                        <span>@Labels.Of(t)</span>
+                    </label>
+                </li>
+            }
+        </ul>
+    </section>
+
+    <section class="section">
+        <header class="section-head"><span>Suspensions automatiques</span></header>
+        <div class="form-grid cols-2">
+            <k-field asp-for="Input.SuspensionsEnabled" class="span-2" />
+            <k-field asp-for="Input.YellowCardsThreshold" inputmode="numeric" hint="0 = pas de suspension au cumul." />
+            <k-field asp-for="Input.MatchesForYellowAccumulation" inputmode="numeric" />
+            <k-field asp-for="Input.MatchesForSecondYellow" inputmode="numeric" />
+            <k-field asp-for="Input.MatchesForDirectRed" inputmode="numeric" />
+            <k-field asp-for="Input.ResetYellowsEachPhase" class="span-2" />
+        </div>
+    </section>
+
+    <section class="section">
+        <header class="section-head"><span>Durée des matchs</span></header>
+        <div class="form-grid cols-2">
+            <k-field asp-for="Input.HalfDurationMinutes" inputmode="numeric" />
+            <k-field asp-for="Input.ExtraTimeHalfDurationMinutes" inputmode="numeric" />
+        </div>
+        <div class="form-actions sticky-mobile">
+            <button class="btn btn-primary">Enregistrer</button>
+            <a href="@(input.Id == 0 ? "/admin/saisons" : $"/admin/competitions/{input.Id}")" class="btn btn-ghost">Annuler</a>
+        </div>
+    </section>
+</form>

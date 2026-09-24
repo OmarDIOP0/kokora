@@ -1,0 +1,71 @@
+@model ClubFormVm
+@{
+    var i = Model.Input;
+    ViewData["Title"] = i.Id == 0 || string.IsNullOrEmpty(i.Name) ? "Nouvelle équipe" : i.Name;
+    // Champs vides = null après liaison du formulaire.
+    var preview = new TeamVm(i.Id, string.IsNullOrEmpty(i.Name) ? "Nouvelle équipe" : i.Name, i.ShortName ?? "", "",
+        i.PrimaryColor ?? "#5b5f63", i.SecondaryColor, Model.LogoPath);
+}
+
+<div class="page-head">
+    <div>
+        <nav class="crumbs"><a href="/admin/equipes">Équipes</a></nav>
+        <h1>@ViewData["Title"]</h1>
+    </div>
+    @if (i.Id != 0)
+    {
+        <a href="/admin/joueurs?equipe=@i.Id" class="btn btn-secondary btn-sm"><icon name="users" />Effectif</a>
+    }
+</div>
+
+<form method="post" action="/admin/equipes/enregistrer" enctype="multipart/form-data" novalidate>
+    <input type="hidden" asp-for="Input.Id">
+    <div asp-validation-summary="ModelOnly" class="error-summary mb-3"></div>
+
+    <section class="section">
+        <header class="section-head"><span>Identité</span></header>
+        <div class="form-grid cols-2">
+            <k-field asp-for="Input.Name" hint="Ex. « ASC Jeanne d'Arc »." />
+            <k-field asp-for="Input.ShortName" hint="Affiché sur mobile et dans les tableaux." />
+            <k-field asp-for="Input.Neighborhood" />
+            <k-field asp-for="Input.Zone" items="Labels.Zones" empty="Aucune" />
+            <k-field asp-for="Input.FoundedYear" inputmode="numeric" />
+            <k-field asp-for="Input.IsActive" hint="Une équipe inactive n'est plus proposée dans les listes." />
+        </div>
+    </section>
+
+    <section class="section">
+        <header class="section-head"><span>Logo et couleurs</span></header>
+        <div class="flex items-center gap-4 px-4 pt-4">
+            <crest team="preview" size="xl" />
+            <p class="text-[13.5px] text-ink-2">Sans logo, l'écusson est généré avec les initiales et les couleurs de l'équipe.</p>
+        </div>
+        <div class="form-grid cols-2">
+            <k-field asp-for="Input.PrimaryColor" type="color" />
+            <k-field asp-for="Input.SecondaryColor" type="color" />
+            <k-field asp-for="Logo" label="Logo" type="file" accept="image/png,image/jpeg,image/webp" class="span-2"
+                     hint="PNG, JPEG ou WebP, 8 Mo max. Redimensionné et converti automatiquement." />
+            @if (Model.LogoPath is not null)
+            {
+                <k-field asp-for="Input.RemoveLogo" class="span-2" />
+            }
+        </div>
+    </section>
+
+    <section class="section">
+        <header class="section-head"><span>Contact</span><span class="sub">non affiché publiquement</span></header>
+        <div class="form-grid cols-2">
+            <k-field asp-for="Input.ManagerName" />
+            <k-field asp-for="Input.ContactPhone" type="tel" inputmode="tel" placeholder="77 000 00 00" />
+        </div>
+        <div class="form-actions sticky-mobile">
+            <button class="btn btn-primary">Enregistrer</button>
+            <a href="/admin/equipes" class="btn btn-ghost">Annuler</a>
+            @if (i.Id != 0)
+            {
+                <button formaction="/admin/equipes/@i.Id/supprimer" formnovalidate class="btn btn-ghost ml-auto text-loss"
+                        data-confirm="Supprimer « @i.Name » ?"><icon name="trash-2" />Supprimer</button>
+            }
+        </div>
+    </section>
+</form>

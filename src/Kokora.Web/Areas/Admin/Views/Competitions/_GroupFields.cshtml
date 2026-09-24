@@ -1,0 +1,13 @@
+@model GroupInput
+@{
+    var clubs = (List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewData["Clubs"]!;
+}
+<div class="form-grid cols-2">
+    <k-field asp-for="Name" />
+    <k-field asp-for="ClubIds" type="multiselect" items="clubs" class="span-2"
+             hint="Zonales de Nguékokh : 4 ou 5 équipes par poule (avec 5, une équipe est exempte à chaque journée). Tapez pour rechercher." />
+    <k-field asp-for="QualifiedCount" inputmode="numeric" hint="Premières places colorées en vert." />
+    <k-field asp-for="QualifiedLabel" placeholder="Qualifié" />
+    <k-field asp-for="PlayoffCount" inputmode="numeric" />
+    <k-field asp-for="EliminatedCount" inputmode="numeric" />
+</div>

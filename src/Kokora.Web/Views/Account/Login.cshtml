@@ -1,0 +1,20 @@
+@model Kokora.Web.Controllers.LoginInput
+@{
+    ViewData["Title"] = "Connexion";
+}
+<div class="mx-auto max-w-[420px] md:pt-8">
+    <section class="section">
+        <header class="section-head"><span>Connexion</span></header>
+        <form method="post" asp-action="Login" class="grid gap-4 p-4" novalidate>
+            <input type="hidden" asp-for="ReturnUrl">
+            <div asp-validation-summary="ModelOnly" class="error-summary" role="alert"></div>
+            <k-field asp-for="Login" autocomplete="username" autofocus="true" />
+            <k-field asp-for="Password" type="password" autocomplete="current-password" />
+            <k-field asp-for="RememberMe" />
+            <button type="submit" class="btn btn-primary w-full">Se connecter</button>
+        </form>
+    </section>
+    <p class="px-4 py-4 text-center text-[13px] text-ink-3">
+        La création de compte pour les supporters arrive bientôt : favoris synchronisés, notifications de buts, pronostics.
+    </p>
+</div>

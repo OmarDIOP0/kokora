@@ -1,0 +1,56 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@{
+    var title = ViewData["Title"] as string ?? "Administration";
+    var csrf = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+    var flash = TempData["k-flash"] as string;
+}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="robots" content="noindex, nofollow">
+    <title>@title · Admin Kokora</title>
+    <meta name="theme-color" content="#ffffff">
+    <meta name="csrf-token" content="@csrf">
+    <link rel="icon" href="~/favicon.svg" type="image/svg+xml">
+    <script>
+        (function () {
+            var d = document.documentElement, t = null;
+            try { t = localStorage.getItem('k-theme'); } catch (e) { }
+            d.dataset.theme = (t === 'dark' || t === 'light') ? t
+                : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        })();
+    </script>
+    <link rel="stylesheet" href="~/dist/admin.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/dist/app.css" asp-append-version="true">
+    <script type="module" src="~/dist/core.js" asp-append-version="true"></script>
+    <script type="module" src="~/dist/admin.js" asp-append-version="true"></script>
+</head>
+<body data-flash="@flash">
+    <div class="admin-shell" x-data="{ open: false }" @@keydown.escape.window="open = false">
+        <aside class="admin-side" :class="open && 'is-open'" aria-label="Menu d'administration">
+            <partial name="_AdminNav" />
+        </aside>
+        <div class="admin-backdrop lg:hidden" x-show="open" x-cloak @@click="open = false"></div>
+
+        <div class="min-w-0">
+            <header class="admin-top lg:hidden">
+                <div class="flex h-14 items-center gap-1 px-1">
+                    <button type="button" class="btn btn-ghost btn-icon" @@click="open = true" aria-label="Ouvrir le menu">
+                        <icon name="menu" />
+                    </button>
+                    <span class="truncate font-display text-lg font-bold">@title</span>
+                    <button type="button" class="btn btn-ghost btn-icon ml-auto" x-data @@click="$store.theme.toggle()" aria-label="Basculer le mode sombre">
+                        <icon name="moon" class="dark-hide" /><icon name="sun" class="dark-show" />
+                    </button>
+                </div>
+            </header>
+            <main id="contenu" class="mx-auto w-full max-w-[1100px] pb-24 md:px-6">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

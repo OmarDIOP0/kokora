@@ -1,0 +1,17 @@
+@model PlayersPageVm
+<div class="flex items-center border-t border-line px-4 py-2 text-[13px] text-ink-3">
+    @Model.Total joueur@(Model.Total > 1 ? "s" : "")
+</div>
+@if (Model.Total == 0)
+{
+    <div class="empty border-t border-line">
+        <strong>Aucun joueur</strong>
+        Ajoutez-les un par un ou importez un fichier Excel.
+    </div>
+}
+else
+{
+    <ul class="border-t border-line">
+        <partial name="_Rows" model="Model" />
+    </ul>
+}

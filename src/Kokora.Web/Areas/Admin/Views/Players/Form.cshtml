@@ -1,0 +1,61 @@
+@model PlayerFormVm
+@{
+    var i = Model.Input;
+    ViewData["Title"] = i.Id == 0 ? "Nouveau joueur" : $"{i.FirstName} {i.LastName}";
+}
+
+<div class="page-head">
+    <div>
+        <nav class="crumbs"><a href="/admin/joueurs">Joueurs</a></nav>
+        <h1>@ViewData["Title"]</h1>
+    </div>
+</div>
+
+<form method="post" action="/admin/joueurs/enregistrer" enctype="multipart/form-data" novalidate>
+    <input type="hidden" asp-for="Input.Id">
+    <div asp-validation-summary="ModelOnly" class="error-summary mb-3"></div>
+
+    <section class="section">
+        <header class="section-head"><span>Identité</span></header>
+        <div class="form-grid cols-2">
+            <k-field asp-for="Input.FirstName" autocomplete="off" autofocus="@(i.Id == 0)" />
+            <k-field asp-for="Input.LastName" autocomplete="off" />
+            <k-field asp-for="Input.Nickname" hint="Nom connu au quartier : affiché en priorité." />
+            <k-field asp-for="Input.Position" items="Labels.Enum<PlayerPosition>(Labels.Of)" />
+            <k-field asp-for="Input.BirthDate" type="date" />
+            <div>
+                <k-field asp-for="Photo" label="Photo" type="file" accept="image/png,image/jpeg,image/webp" hint="Recadrée en carré automatiquement." />
+                @if (Model.PhotoPath is not null)
+                {
+                    <div class="mt-2 flex items-center gap-3">
+                        <img src="@Model.PhotoPath" alt="" width="56" height="56" class="h-14 w-14 rounded-full object-cover">
+                        <k-field asp-for="Input.RemovePhoto" />
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <header class="section-head"><span>Équipe</span><span class="sub">@Model.SeasonName</span></header>
+        <div class="form-grid cols-2">
+            <k-field asp-for="Input.ClubId" items="Model.Clubs" empty="Sans équipe" search="true" class="span-2" />
+            <k-field asp-for="Input.ShirtNumber" inputmode="numeric" />
+            <k-field asp-for="Input.LicenseNumber" />
+            <k-field asp-for="Input.IsCaptain" />
+        </div>
+        <div class="form-actions sticky-mobile">
+            <button class="btn btn-primary">Enregistrer</button>
+            @if (i.Id == 0)
+            {
+                <button name="next" value="autre" class="btn btn-secondary">Enregistrer et ajouter un autre</button>
+            }
+            <a href="/admin/joueurs" class="btn btn-ghost">Annuler</a>
+            @if (i.Id != 0)
+            {
+                <button formaction="/admin/joueurs/@i.Id/supprimer" formnovalidate class="btn btn-ghost ml-auto text-loss"
+                        data-confirm="Supprimer ce joueur ?"><icon name="trash-2" />Supprimer</button>
+            }
+        </div>
+    </section>
+</form>

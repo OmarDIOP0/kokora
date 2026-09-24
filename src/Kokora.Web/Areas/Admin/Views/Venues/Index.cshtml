@@ -1,0 +1,81 @@
+@model VenuesPageVm
+@{
+    ViewData["Title"] = "Stades et arbitres";
+}
+
+<div class="page-head">
+    <div>
+        <p class="label">Données</p>
+        <h1>Stades et arbitres</h1>
+    </div>
+</div>
+
+<div class="grid gap-3 lg:grid-cols-2">
+    <section class="section self-start" x-data="{ edit: null }">
+        <header class="section-head"><icon name="map-pin" /><span>Stades</span><span class="sub">@Model.Stadiums.Count</span></header>
+        @foreach (var s in Model.Stadiums)
+        {
+            <div class="border-b border-line">
+                <div class="row !border-0" x-show="edit !== @s.Id">
+                    <div class="min-w-0 flex-1">
+                        <div class="font-semibold">@s.Name</div>
+                        <div class="text-[13px] text-ink-3">@(s.Neighborhood ?? "—")@(s.Capacity is { } cap ? $" · {cap} places" : "")</div>
+                    </div>
+                    @if (s.IsDemo) { <span class="badge warn">Démo</span> }
+                    <button type="button" class="btn btn-ghost btn-icon" @@click="edit = @s.Id" aria-label="Modifier @s.Name"><icon name="pencil" /></button>
+                    <form method="post" action="/admin/lieux/stades/@s.Id/supprimer" data-confirm="Supprimer le stade « @s.Name » ? Les matchs concernés n'auront plus de stade.">
+                        <button class="btn btn-ghost btn-icon" aria-label="Supprimer @s.Name"><icon name="trash-2" /></button>
+                    </form>
+                </div>
+                <form method="post" action="/admin/lieux/stades" class="grid gap-2 p-3 sm:grid-cols-[1fr_1fr_100px_auto] sm:items-end" x-show="edit === @s.Id" x-cloak>
+                    <input type="hidden" name="NewStadium.Id" value="@s.Id">
+                    <input name="NewStadium.Name" value="@s.Name" class="input" aria-label="Nom" required maxlength="120">
+                    <input name="NewStadium.Neighborhood" value="@s.Neighborhood" class="input" aria-label="Quartier" placeholder="Quartier">
+                    <input name="NewStadium.Capacity" value="@s.Capacity" class="input num" aria-label="Capacité" placeholder="Places" inputmode="numeric">
+                    <div class="flex gap-1"><button class="btn btn-primary btn-sm">OK</button><button type="button" class="btn btn-ghost btn-sm" @@click="edit = null">Annuler</button></div>
+                </form>
+            </div>
+        }
+        <form method="post" action="/admin/lieux/stades" novalidate>
+            <div class="form-grid cols-2">
+                <k-field asp-for="NewStadium.Name" label="Nouveau stade" />
+                <k-field asp-for="NewStadium.Neighborhood" />
+                <k-field asp-for="NewStadium.Capacity" inputmode="numeric" />
+            </div>
+            <div class="form-actions"><button class="btn btn-primary btn-sm"><icon name="plus" />Ajouter le stade</button></div>
+        </form>
+    </section>
+
+    <section class="section self-start" x-data="{ edit: null }">
+        <header class="section-head"><icon name="flag" /><span>Arbitres</span><span class="sub">@Model.Referees.Count</span></header>
+        @foreach (var r in Model.Referees)
+        {
+            <div class="border-b border-line">
+                <div class="row !border-0" x-show="edit !== @r.Id">
+                    <div class="min-w-0 flex-1">
+                        <div class="font-semibold">@r.FullName</div>
+                        @if (r.Phone is not null) { <div class="text-[13px] text-ink-3">@r.Phone</div> }
+                    </div>
+                    @if (r.IsDemo) { <span class="badge warn">Démo</span> }
+                    <button type="button" class="btn btn-ghost btn-icon" @@click="edit = @r.Id" aria-label="Modifier @r.FullName"><icon name="pencil" /></button>
+                    <form method="post" action="/admin/lieux/arbitres/@r.Id/supprimer" data-confirm="Supprimer l'arbitre « @r.FullName » ?">
+                        <button class="btn btn-ghost btn-icon" aria-label="Supprimer @r.FullName"><icon name="trash-2" /></button>
+                    </form>
+                </div>
+                <form method="post" action="/admin/lieux/arbitres" class="grid gap-2 p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end" x-show="edit === @r.Id" x-cloak>
+                    <input type="hidden" name="NewReferee.Id" value="@r.Id">
+                    <input name="NewReferee.FullName" value="@r.FullName" class="input" aria-label="Nom complet" required maxlength="120">
+                    <input name="NewReferee.Phone" value="@r.Phone" class="input" aria-label="Téléphone" placeholder="Téléphone" inputmode="tel">
+                    <div class="flex gap-1"><button class="btn btn-primary btn-sm">OK</button><button type="button" class="btn btn-ghost btn-sm" @@click="edit = null">Annuler</button></div>
+                </form>
+            </div>
+        }
+        <form method="post" action="/admin/lieux/arbitres" novalidate>
+            <div class="form-grid cols-2">
+                <k-field asp-for="NewReferee.FullName" label="Nouvel arbitre" />
+                <k-field asp-for="NewReferee.Phone" type="tel" inputmode="tel" />
+            </div>
+            <div class="form-actions"><button class="btn btn-primary btn-sm"><icon name="plus" />Ajouter l'arbitre</button></div>
+        </form>
+    </section>
+</div>

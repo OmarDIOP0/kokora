@@ -1,0 +1,40 @@
+@model PhaseInput
+@{
+    var c = (Kokora.Domain.Competitions.Competition)ViewData["Competition"]!;
+    ViewData["Title"] = Model.Id == 0 ? "Nouvelle phase" : "Modifier la phase";
+}
+
+<div class="page-head">
+    <div>
+        <nav class="crumbs"><a href="/admin/saisons">Saisons</a><span>/</span><a href="/admin/competitions/@c.Id">@c.Name</a></nav>
+        <h1>@ViewData["Title"]</h1>
+    </div>
+</div>
+
+<section class="section" x-data="{ type: '@((int)Model.Type)' }">
+    <form method="post" action="/admin/phases/enregistrer" novalidate>
+        <input type="hidden" asp-for="Id">
+        <input type="hidden" asp-for="CompetitionId">
+        <div asp-validation-summary="ModelOnly" class="error-summary mx-4 mt-4"></div>
+        <div class="form-grid cols-2">
+            <k-field asp-for="Name" hint="Ex. « Phase de poules », « Phase finale »." class="span-2" />
+            <div @@change="type = $event.target.value">
+                <k-field asp-for="Type" items="Labels.Enum<PhaseType>(Labels.Of)" />
+            </div>
+            <k-field asp-for="Legs" items="Labels.Enum<Legs>(Labels.Of)" />
+            <div class="span-2 grid gap-1" x-show="type === '2'" x-cloak>
+                <k-field asp-for="HasExtraTime" />
+                <k-field asp-for="HasPenalties" />
+            </div>
+        </div>
+        <div class="form-actions sticky-mobile">
+            <button class="btn btn-primary">Enregistrer</button>
+            <a href="/admin/competitions/@c.Id" class="btn btn-ghost">Annuler</a>
+            @if (Model.Id != 0)
+            {
+                <button formaction="/admin/phases/@Model.Id/supprimer" class="btn btn-ghost ml-auto text-loss"
+                        data-confirm="Supprimer cette phase, ses poules et ses matchs non joués ?"><icon name="trash-2" />Supprimer</button>
+            }
+        </div>
+    </form>
+</section>

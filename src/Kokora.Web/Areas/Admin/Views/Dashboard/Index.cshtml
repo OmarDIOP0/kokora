@@ -1,0 +1,99 @@
+@model DashboardData
+@{
+    ViewData["Title"] = "Tableau de bord";
+    var isAdmin = User.IsInRole(Kokora.Application.Abstractions.Roles.SuperAdmin) || User.IsInRole(Kokora.Application.Abstractions.Roles.Admin);
+}
+
+<div class="page-head">
+    <div>
+        <p class="label">@(Model.SeasonName ?? "Aucune saison")</p>
+        <h1>Tableau de bord</h1>
+    </div>
+    @if (isAdmin && Model.SeasonId is not null)
+    {
+        <div class="flex flex-wrap gap-2">
+            <a href="/admin/matchs/nouveau" class="btn btn-primary btn-sm"><icon name="calendar-plus" />Nouveau match</a>
+            <a href="/admin/equipes/nouvelle" class="btn btn-secondary btn-sm"><icon name="plus" />Équipe</a>
+            <a href="/admin/joueurs/nouveau" class="btn btn-secondary btn-sm"><icon name="plus" />Joueur</a>
+        </div>
+    }
+</div>
+
+@if (Model.SeasonId is null)
+{
+    <section class="section">
+        <div class="empty">
+            <strong>Commencez par créer une saison</strong>
+            <p>Créez la saison, puis sa structure type (Zonales, 4 Grandes, Coupe du Maire) en un clic.</p>
+            <div class="mt-5 flex flex-wrap justify-center gap-2">
+                <a href="/admin/saisons/nouvelle" class="btn btn-primary">Créer la saison</a>
+                <a href="/admin/demo" class="btn btn-secondary">Voir avec des données de démo</a>
+            </div>
+        </div>
+    </section>
+}
+else
+{
+    <section class="section">
+        <div class="grid grid-cols-2 md:grid-cols-4">
+            <div class="stat border-b border-r border-line md:border-b-0"><div class="label">Équipes</div><div class="v mt-1">@Model.Clubs</div></div>
+            <div class="stat border-b border-line md:border-b-0 md:border-r"><div class="label">Joueurs inscrits</div><div class="v mt-1">@Model.Players</div></div>
+            <div class="stat border-r border-line"><div class="label">Matchs joués</div><div class="v mt-1">@Model.MatchesPlayed<span class="text-lg text-ink-3"> / @Model.MatchesPlanned</span></div></div>
+            <div class="stat"><div class="label">Résultats à saisir</div><div class="v mt-1 @(Model.MissingResults.Count > 0 ? "text-warn" : "")">@Model.MissingResults.Count</div></div>
+        </div>
+    </section>
+
+    <div class="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <div class="min-w-0">
+            <section class="section">
+                <header class="section-head"><span>Matchs du jour</span><span class="sub">@KokoraTime.Day(KokoraTime.Today)</span></header>
+                @if (Model.Today.Count == 0)
+                {
+                    <div class="empty !py-6">Aucun match aujourd'hui.</div>
+                }
+                @foreach (var m in Model.Today)
+                {
+                    <partial name="_AdminMatchRow" model="m" />
+                }
+            </section>
+
+            <section class="section">
+                <header class="section-head">
+                    <icon name="circle-alert" class="text-warn" />
+                    <span>Résultats à saisir</span>
+                    @if (Model.MissingResults.Count > 0)
+                    {
+                        <a href="/admin/matchs?sansResultat=true" class="ml-auto text-[13px] font-semibold text-brand">Tout voir</a>
+                    }
+                </header>
+                @if (Model.MissingResults.Count == 0)
+                {
+                    <div class="empty !py-6">Tous les matchs passés ont un résultat.</div>
+                }
+                @foreach (var m in Model.MissingResults)
+                {
+                    <partial name="_AdminMatchRow" model="m" view-data='new ViewDataDictionary(ViewData) { ["ShowDate"] = true }' />
+                }
+            </section>
+        </div>
+
+        <section class="section self-start">
+            <header class="section-head"><span>Dernières modifications</span>
+                @if (isAdmin) { <a href="/admin/audit" class="ml-auto text-[13px] font-semibold text-brand">Journal</a> }
+            </header>
+            @if (Model.RecentChanges.Count == 0)
+            {
+                <div class="empty !py-6">Rien pour l'instant.</div>
+            }
+            @foreach (var a in Model.RecentChanges)
+            {
+                <div class="row !items-start !gap-3 text-[13.5px]">
+                    <div class="min-w-0 flex-1">
+                        <div><span class="font-semibold">@Labels.AuditAction(a.Action)</span> · @Labels.Entity(a.EntityType) <span class="text-ink-3">#@a.EntityId</span></div>
+                        <div class="text-[12.5px] text-ink-3">@(a.UserName ?? "Système") · <time data-rel datetime="@a.At.ToString("O")">@KokoraTime.Long(a.At)</time></div>
+                    </div>
+                </div>
+            }
+        </section>
+    </div>
+}

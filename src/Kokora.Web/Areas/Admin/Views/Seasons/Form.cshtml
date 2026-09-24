@@ -1,0 +1,27 @@
+@model SeasonInput
+@{
+    ViewData["Title"] = Model.Id == 0 ? "Nouvelle saison" : "Modifier la saison";
+}
+
+<div class="page-head">
+    <div>
+        <nav class="crumbs"><a href="/admin/saisons">Saisons</a></nav>
+        <h1>@ViewData["Title"]</h1>
+    </div>
+</div>
+
+<section class="section">
+    <form method="post" action="/admin/saisons/enregistrer" novalidate>
+        <input type="hidden" asp-for="Id">
+        <div asp-validation-summary="ModelOnly" class="error-summary mx-4 mt-4"></div>
+        <div class="form-grid cols-2">
+            <k-field asp-for="Year" inputmode="numeric" />
+            <k-field asp-for="Name" hint="Ex. « Saison 2026 » ou « Navétane 2026 »." />
+            <k-field asp-for="IsCurrent" class="span-2" hint="C'est la saison affichée par défaut sur le site." />
+        </div>
+        <div class="form-actions sticky-mobile">
+            <button class="btn btn-primary">Enregistrer</button>
+            <a href="/admin/saisons" class="btn btn-ghost">Annuler</a>
+        </div>
+    </form>
+</section>

@@ -1,0 +1,119 @@
+@model MatchFormVm
+@{
+    var i = Model.Input;
+    ViewData["Title"] = i.Id == 0 ? "Nouveau match" : "Modifier le match";
+    string? Err(string key) => ViewData.ModelState.TryGetValue("Input." + key, out var e) && e.Errors.Count > 0 ? e.Errors[0].ErrorMessage : null;
+    var context = new
+    {
+        phases = Model.Phases.Select(p => new { id = p.Id, name = p.Name, league = p.Type == PhaseType.League }),
+        groups = Model.Groups.Select(g => new { id = int.Parse(g.Value), name = g.Text, phase = int.Parse(g.Group!.Name) }),
+        rounds = Model.Rounds.Select(r => new { id = int.Parse(r.Value), name = r.Text, phase = int.Parse(r.Group!.Name) }),
+        phase = i.PhaseId, group = i.GroupId, round = i.RoundId
+    };
+    var played = Model.Status is not (MatchStatus.Scheduled or MatchStatus.Postponed);
+}
+
+<div class="page-head">
+    <div>
+        <nav class="crumbs"><a href="/admin/matchs">Calendrier</a></nav>
+        <h1>@ViewData["Title"]</h1>
+    </div>
+    @if (i.Id != 0)
+    {
+        <span class="badge @Display.StatusBadge(Model.Status)">@Display.StatusLabel(Model.Status)</span>
+    }
+</div>
+
+@if (Model.Phases.Count == 0)
+{
+    <section class="section">
+        <div class="empty"><strong>Aucune phase</strong>Créez d'abord une compétition et ses phases.
+            <div class="mt-4"><a href="/admin/saisons" class="btn btn-primary">Saisons et compétitions</a></div></div>
+    </section>
+}
+else
+{
+    <script type="application/json" id="match-ctx">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(context))</script>
+    <form method="post" action="/admin/matchs/enregistrer" novalidate
+          x-data="{ ...JSON.parse(document.getElementById('match-ctx').textContent),
+                    get current() { return this.phases.find(p => p.id == this.phase) },
+                    get league() { return this.current?.league ?? true } }">
+        <input type="hidden" asp-for="Input.Id">
+        <div asp-validation-summary="ModelOnly" class="error-summary mb-3"></div>
+        @if (played)
+        {
+            <p class="notice mb-3 !rounded-md"><icon name="circle-alert" />Ce match a déjà un résultat : modifiez ici la programmation seulement.</p>
+        }
+
+        <section class="section">
+            <header class="section-head"><span>Compétition</span></header>
+            <div class="form-grid cols-2">
+                <div class="field span-2">
+                    <label for="phase">Phase</label>
+                    <select id="phase" name="Input.PhaseId" class="input" x-model.number="phase">
+                        @* Nom complet (« Zonale 5A · Phase de poules ») : lisible même liste fermée. *@
+                        @foreach (var p in Model.Phases)
+                        {
+                            <option value="@p.Id" selected="@(p.Id == i.PhaseId)">@p.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="field" x-show="league">
+                    <label for="group">Poule</label>
+                    <select id="group" name="Input.GroupId" class="input" x-model.number="group" :disabled="!league" aria-invalid="@(Err("GroupId") is null ? "false" : "true")">
+                        <option value="">Choisir</option>
+                        <template x-for="g in groups.filter(g => g.phase == phase)" :key="g.id">
+                            <option :value="g.id" x-text="g.name" :selected="g.id == group"></option>
+                        </template>
+                    </select>
+                    @if (Err("GroupId") is { } ge) { <span class="error">@ge</span> }
+                </div>
+                <div class="field" x-show="!league" x-cloak>
+                    <label for="round">Tour</label>
+                    <select id="round" name="Input.RoundId" class="input" x-model.number="round" :disabled="league">
+                        <option value="">Aucun</option>
+                        <template x-for="r in rounds.filter(r => r.phase == phase)" :key="r.id">
+                            <option :value="r.id" x-text="r.name" :selected="r.id == round"></option>
+                        </template>
+                    </select>
+                    @if (Err("RoundId") is { } re) { <span class="error">@re</span> }
+                </div>
+                <k-field asp-for="Input.Matchday" inputmode="numeric" />
+            </div>
+        </section>
+
+        <section class="section">
+            <header class="section-head"><span>Affiche</span></header>
+            <div class="form-grid cols-2">
+                <div class="grid gap-2">
+                    <k-field asp-for="Input.HomeClubId" items="Model.Clubs" empty="À désigner" search="true" />
+                    <k-field asp-for="Input.HomePlaceholder" placeholder="Ex. Vainqueur QF1" />
+                </div>
+                <div class="grid gap-2">
+                    <k-field asp-for="Input.AwayClubId" items="Model.Clubs" empty="À désigner" search="true" />
+                    <k-field asp-for="Input.AwayPlaceholder" placeholder="Ex. Vainqueur QF2" />
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <header class="section-head"><span>Date et lieu</span><span class="sub">heure de Dakar</span></header>
+            <div class="form-grid cols-2">
+                <k-field asp-for="Input.KickoffLocal" type="datetime" class="span-2" />
+                <k-field asp-for="Input.StadiumId" items="Model.Stadiums" empty="Non précisé" />
+                <k-field asp-for="Input.RefereeId" items="Model.Referees" empty="Non précisé" search="true" />
+                <k-field asp-for="Input.IsFeatured" class="span-2" hint="Mis en avant avec un compte à rebours sur l'accueil." />
+                <k-field asp-for="Input.Notes" type="textarea" class="span-2" />
+            </div>
+            <div class="form-actions sticky-mobile">
+                <button class="btn btn-primary">Enregistrer</button>
+                <a href="/admin/matchs" class="btn btn-ghost">Annuler</a>
+                @if (i.Id != 0 && !played)
+                {
+                    <button formaction="/admin/matchs/@i.Id/reporter" formnovalidate class="btn btn-ghost ml-auto text-warn"
+                            data-confirm="Marquer ce match comme reporté (date à fixer) ?"><icon name="calendar-clock" />Reporter</button>
+                }
+            </div>
+        </section>
+    </form>
+}

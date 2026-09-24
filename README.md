@@ -2,7 +2,7 @@
 
 Résultats, classements, buteurs et matchs en direct du navétane de Nguékokh (zonales 5A et 5B, 4 Grandes, Coupe du Maire).
 
-> Projet en cours : phase 1 terminée (architecture, modèle de données, design system).
+> Projet en cours : phases 1 (architecture, design system) et 2 (administration) terminées.
 > Ce README sera complété au fil des phases (déploiement, sauvegardes, Docker).
 
 ## Pile technique
@@ -74,6 +74,28 @@ tests/
 
    Les migrations sont appliquées automatiquement au démarrage. Application : http://localhost:5099
 
+## Administration (`/admin`)
+
+Connexion : `/compte/connexion` (e-mail ou numéro de téléphone). Rôles :
+
+| Rôle | Accès |
+|---|---|
+| SuperAdmin, Admin | tout l'admin sportif : saisons, compétitions, phases, poules, tableaux, équipes, joueurs, stades, arbitres, calendrier, données de démo, journal d'audit |
+| Rédacteur | tableau de bord (et les infos, à venir) |
+
+Parcours type d'une saison :
+
+1. **Saisons et compétitions** → « Nouvelle saison », puis « Structure type » : crée Zonale 5A, Zonale 5B, 4 Grandes Zone 5A, 4 Grandes Zone 5B et Coupe du Maire (tout reste modifiable : règles de points, départage, suspensions, durée des matchs).
+2. **Équipes** : les ASC avec logo (converti automatiquement en WebP), couleurs, quartier, zone.
+3. **Joueurs** : un par un, ou import d'un fichier Excel/CSV (modèle téléchargeable sur la page d'import).
+4. Dans chaque zonale, **Phase de poules** → créer les poules (4 ou 5 équipes), puis « Calendrier » pour générer toutes les rencontres (aller simple ou aller-retour ; avec 5 équipes, une équipe est exempte à chaque journée).
+5. **Phase finale / 4 Grandes / Coupe** : « Créer le tableau » (2 à 32 équipes) ; les tours sont reliés, chaque vainqueur passe automatiquement au tour suivant.
+6. **Calendrier** : ajuster dates, stades et arbitres ; reporter un match en un clic.
+
+Toutes les modifications sont tracées dans le **journal d'audit** (qui, quand, valeurs avant/après).
+
+**Données de démonstration** : `/admin/demo` crée 17 ASC fictives (« ASC Démo 1 »…), leurs joueurs et deux zonales avec des résultats simulés. Un bouton les supprime toutes sans toucher aux vraies données. Disponible tant qu'aucune vraie saison n'existe pour l'année en cours.
+
 ## Développement
 
 - Front en mode surveillance (deux terminaux) : `npm run watch:css` et `npm run watch:js` dans `src/Kokora.Web`.
@@ -85,6 +107,9 @@ tests/
   ```
 
 - Tests : `dotnet test`
+  - `Kokora.Domain.Tests`, `Kokora.Application.Tests` : logique pure (calendrier, dates, slugs…).
+  - `Kokora.Web.Tests` : application complète sur PostgreSQL. Les bases `kokora_tests` et `kokora_tests_services` sont **recréées à chaque exécution** (jamais la base `kokora`). Connexion : variable `KOKORA_TEST_CONNECTION`, sinon le user-secret du projet Web.
+  - Relecture visuelle de l'admin sans se connecter : `KOKORA_SNAPSHOTS=1 dotnet test tests/Kokora.Web.Tests --filter Write_admin_snapshots`, puis ouvrir `http://localhost:5099/_snapshots/dashboard.html` (dossier ignoré par Git).
 
 ## Règles par défaut (modifiables par compétition dans l'admin)
 

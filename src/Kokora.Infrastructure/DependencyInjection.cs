@@ -39,6 +39,8 @@ public static class DependencyInjection
             .AddDefaultTokenProviders()
             .AddErrorDescriber<FrenchIdentityErrorDescriber>();
 
+        services.AddSingleton<IImageStore, Storage.SkiaImageStore>();
+        services.AddSingleton<IPlayerFileReader, Storage.PlayerFileReader>();
         services.AddScoped<DbInitializer>();
         return services;
     }

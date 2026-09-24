@@ -1,0 +1,43 @@
+@model MatchesPageVm
+@if (Model.Items.Count == 0)
+{
+    <div class="empty border-t border-line">
+        <strong>Aucun match</strong>
+        Créez les matchs un par un, ou générez le calendrier d'une poule depuis sa phase.
+    </div>
+}
+else
+{
+    @foreach (var day in Model.Items.GroupBy(m => m.KickoffAt is { } k ? DateOnly.FromDateTime(KokoraTime.ToLocal(k).DateTime) : (DateOnly?)null))
+    {
+        <div class="flex items-center gap-2 border-y border-line bg-surface-2 px-4 py-1.5">
+            <span class="label !text-ink-2">@(day.Key is { } d ? KokoraTime.DayRelative(d) : "Date à fixer")</span>
+            <span class="num ml-auto text-[12px] text-ink-3">@day.Count()</span>
+        </div>
+        @foreach (var m in day)
+        {
+            <div class="flex items-stretch border-b border-line last:border-b-0" x-data="{ open: false }">
+                <div class="min-w-0 flex-1 [&>.match]:border-0"><partial name="_AdminMatchRow" model="m" /></div>
+                @if (m.Status is MatchStatus.Scheduled or MatchStatus.Postponed)
+                {
+                    <div class="relative flex items-center pr-1">
+                        <button type="button" class="btn btn-ghost btn-icon" @@click="open = !open" @@click.outside="open = false" aria-label="Actions"><icon name="ellipsis" /></button>
+                        <div x-show="open" x-cloak class="absolute right-1 top-12 z-20 w-72 overflow-hidden rounded-md border border-line bg-surface p-3 shadow-lg">
+                            <form method="post" action="/admin/matchs/@m.Id/reporter" class="grid gap-2">
+                                <label class="label" for="nd-@m.Id">Reprogrammer au</label>
+                                <input id="nd-@m.Id" name="nouvelleDate" class="input" data-datetime placeholder="Nouvelle date">
+                                <button class="btn btn-secondary btn-sm">Reprogrammer</button>
+                            </form>
+                            <form method="post" action="/admin/matchs/@m.Id/reporter" class="mt-2">
+                                <button class="btn btn-ghost btn-sm w-full text-warn"><icon name="calendar-clock" />Reporter (date inconnue)</button>
+                            </form>
+                            <form method="post" action="/admin/matchs/@m.Id/supprimer" data-confirm="Supprimer ce match ?" class="mt-1">
+                                <button class="btn btn-ghost btn-sm w-full text-loss"><icon name="trash-2" />Supprimer</button>
+                            </form>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+}

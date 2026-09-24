@@ -1,0 +1,116 @@
+@model PhasePageVm
+@{
+    var p = Model.Phase;
+    ViewData["Title"] = p.Name;
+    var isLeague = p.Type == PhaseType.League;
+}
+
+<div class="page-head">
+    <div>
+        <nav class="crumbs"><a href="/admin/saisons">@p.Competition.Season.Name</a><span>/</span><a href="/admin/competitions/@p.CompetitionId">@p.Competition.Name</a></nav>
+        <h1>@p.Name</h1>
+        <p class="mt-1 text-[14px] text-ink-2">@Labels.Of(p.Type) · @Labels.Of(p.Legs)@(!isLeague && p.HasExtraTime ? " · prolongations" : "")@(!isLeague && p.HasPenalties ? " · tirs au but" : "")</p>
+    </div>
+    <div class="flex flex-wrap gap-2">
+        <a href="/admin/phases/@p.Id/modifier" class="btn btn-secondary btn-sm"><icon name="pencil" />Modifier</a>
+        <a href="/admin/matchs/nouveau?phaseId=@p.Id" class="btn btn-secondary btn-sm"><icon name="calendar-plus" />Ajouter un match</a>
+    </div>
+</div>
+
+@if (isLeague)
+{
+    @foreach (var g in p.Groups)
+    {
+        var count = Model.MatchCountByGroup.GetValueOrDefault(g.Id);
+        <section class="section" style="--comp:@p.Competition.Color">
+            <header class="section-head" data-accent>
+                <span>@g.Name</span>
+                <span class="sub">@g.Teams.Count équipes · @count match@(count > 1 ? "s" : "")</span>
+                <div class="ml-auto flex items-center">
+                    <a href="/admin/poules/@g.Id/calendrier" class="btn btn-ghost btn-sm"><icon name="shuffle" /><span class="max-sm:sr-only">Calendrier</span></a>
+                    <a href="/admin/poules/@g.Id/modifier" class="btn btn-ghost btn-icon" aria-label="Modifier la poule"><icon name="pencil" /></a>
+                    <form method="post" action="/admin/poules/@g.Id/supprimer?phaseId=@p.Id" data-confirm="Supprimer « @g.Name » ?">
+                        <button class="btn btn-ghost btn-icon" aria-label="Supprimer la poule"><icon name="trash-2" /></button>
+                    </form>
+                </div>
+            </header>
+            @if (g.Teams.Count == 0)
+            {
+                <div class="empty !py-5">Aucune équipe. <a class="font-semibold text-brand" href="/admin/poules/@g.Id/modifier">Ajouter des équipes</a></div>
+            }
+            <ol>
+                @foreach (var t in g.Teams.OrderBy(t => t.Seed))
+                {
+                    var zone = g.Zones.FirstOrDefault(z => t.Seed >= z.FromRank && t.Seed <= z.ToRank);
+                    <li class="row !min-h-11">
+                        <span class="num w-5 text-[13px] text-ink-3">@t.Seed</span>
+                        <crest team="new TeamVm(t.Club.Id, t.Club.Name, t.Club.ShortName, t.Club.Slug, t.Club.PrimaryColor, t.Club.SecondaryColor, t.Club.LogoPath)" />
+                        <span class="flex-1 truncate">@t.Club.Name</span>
+                    </li>
+                }
+            </ol>
+            @if (g.Zones.Count > 0)
+            {
+                <p class="border-t border-line px-4 py-2 text-[12.5px] text-ink-3">
+                    @string.Join(" · ", g.Zones.Select(z => $"{z.Label} : {z.FromRank}{(z.ToRank > z.FromRank ? $" à {z.ToRank}" : "")}"))
+                </p>
+            }
+        </section>
+    }
+
+    <section class="section" id="nouvelle-poule">
+        <header class="section-head"><icon name="plus" /><span>Nouvelle poule</span></header>
+        <form method="post" action="/admin/poules/enregistrer" novalidate>
+            <input type="hidden" name="PhaseId" value="@p.Id">
+            <div asp-validation-summary="ModelOnly" class="error-summary mx-4 mt-4"></div>
+            @{ var ng = Model.NewGroup; }
+            <partial name="_GroupFields" model="ng" view-data='new ViewDataDictionary(ViewData) { ["Clubs"] = Model.Clubs }' />
+            <div class="form-actions">
+                <button class="btn btn-primary">Créer la poule</button>
+            </div>
+        </form>
+    </section>
+}
+else
+{
+    @if (p.Rounds.Count == 0)
+    {
+        <section class="section">
+            <header class="section-head"><span>Tableau à élimination directe</span></header>
+            <form method="post" action="/admin/phases/@p.Id/tableau" class="form-grid cols-2" novalidate>
+                <div class="field">
+                    <label for="TeamCount">Nombre d'équipes</label>
+                    <select id="TeamCount" name="TeamCount" class="input">
+                        @foreach (var n in CompetitionAdminService.BracketSizes)
+                        {
+                            <option value="@n" selected="@(n == 8)">@n équipes (@CompetitionAdminService.RoundInfo(n).Name.ToLower())</option>
+                        }
+                    </select>
+                    <span class="hint">Les tours jusqu'à la finale sont créés et reliés : chaque vainqueur passe automatiquement au tour suivant.</span>
+                </div>
+                <div class="field justify-end">
+                    <label class="check"><input type="checkbox" name="ThirdPlace" value="true"><span>Match pour la 3e place</span></label>
+                </div>
+                <div class="span-2"><button class="btn btn-primary">Créer le tableau</button></div>
+            </form>
+        </section>
+    }
+    else
+    {
+        @foreach (var r in p.Rounds.OrderBy(r => r.Order))
+        {
+            var matches = Model.BracketMatches.Where(m => m.GroupOrRound == r.Name).ToList();
+            <section class="section" style="--comp:@p.Competition.Color">
+                <header class="section-head" data-accent><span>@r.Name</span><span class="sub">@matches.Count match@(matches.Count > 1 ? "s" : "")</span></header>
+                @foreach (var m in matches)
+                {
+                    <partial name="_AdminMatchRow" model="m" view-data='new ViewDataDictionary(ViewData) { ["ShowDate"] = true }' />
+                }
+            </section>
+        }
+        <form method="post" action="/admin/phases/@p.Id/tableau/supprimer" class="mt-3 px-4 md:px-0"
+              data-confirm="Supprimer tout le tableau (tours et matchs non joués) ?">
+            <button class="btn btn-ghost btn-sm text-loss"><icon name="trash-2" />Supprimer le tableau</button>
+        </form>
+    }
+}

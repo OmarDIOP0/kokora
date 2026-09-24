@@ -1,0 +1,49 @@
+@model AdminMatchItem
+@{
+    var showDate = ViewData["ShowDate"] is true;
+    TeamVm? Team(int? id, string name, string? c1, string? c2, string? logo) =>
+        id is null ? null : new TeamVm(id.Value, name, "", "", c1 ?? "#5b5f63", c2, logo);
+    var home = Team(Model.HomeId, Model.Home, Model.HomeColor, Model.HomeColor2, Model.HomeLogo);
+    var away = Team(Model.AwayId, Model.Away, Model.AwayColor, Model.AwayColor2, Model.AwayLogo);
+    var played = Model.HomeScore.HasValue && Model.AwayScore.HasValue;
+}
+<a href="/admin/matchs/@Model.Id/modifier" class="match !grid-cols-[64px_1fr_auto]" style="--comp:@Model.CompetitionColor">
+    <div class="match-time num">
+        @if (Model.KickoffAt is { } k)
+        {
+            @if (showDate)
+            {
+                <span class="block text-[12px] text-ink-3">@KokoraTime.ToLocal(k).ToString("ddd d MMM", KokoraTime.Fr)</span>
+            }
+            <span>@KokoraTime.Hour(k)</span>
+        }
+        else
+        {
+            <span class="text-ink-3">Date ?</span>
+        }
+    </div>
+    <div class="min-w-0">
+        <div class="mb-1 flex items-center gap-1.5 text-[12px] text-ink-3">
+            <span class="comp-swatch !h-2 !w-2"></span>
+            <span class="truncate">@Model.Competition · @(Model.GroupOrRound ?? Model.Phase)@(Model.Matchday is { } md ? $" · J{md}" : "")</span>
+        </div>
+        <div class="match-teams">
+            <div class="match-team"><crest team="home" /><span class="name @(home is null ? "text-ink-3" : "")">@Model.Home</span></div>
+            <div class="match-team"><crest team="away" /><span class="name @(away is null ? "text-ink-3" : "")">@Model.Away</span></div>
+        </div>
+    </div>
+    <div class="grid justify-items-end gap-1">
+        @if (played)
+        {
+            <span class="score text-[18px]">@Model.HomeScore - @Model.AwayScore</span>
+            @if (Model.HomePenalties.HasValue)
+            {
+                <span class="text-[11px] text-ink-3">tab @Model.HomePenalties-@Model.AwayPenalties</span>
+            }
+        }
+        @if (Model.Status != MatchStatus.Scheduled || !played)
+        {
+            <span class="badge @Display.StatusBadge(Model.Status)">@Display.StatusLabel(Model.Status)</span>
+        }
+    </div>
+</a>

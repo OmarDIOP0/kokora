@@ -1,0 +1,40 @@
+@model DemoCounts
+@{
+    ViewData["Title"] = "Données de démo";
+    var present = Model.Clubs > 0;
+}
+
+<div class="page-head">
+    <div>
+        <p class="label">Système</p>
+        <h1>Données de démonstration</h1>
+        <p class="mt-1 max-w-[62ch] text-[14px] text-ink-2">
+            Pour voir l'application remplie avant la vraie saison. Tout est clairement fictif (« ASC Démo 1 », « Joueur 7 Démo 3 », « Stade Démo A ») et marqué comme démo.
+        </p>
+    </div>
+</div>
+
+<section class="section">
+    <div class="grid grid-cols-2 md:grid-cols-4">
+        <div class="stat border-b border-r border-line md:border-b-0"><div class="label">Saison</div><div class="v mt-1">@Model.Seasons</div></div>
+        <div class="stat border-b border-line md:border-b-0 md:border-r"><div class="label">Équipes</div><div class="v mt-1">@Model.Clubs</div></div>
+        <div class="stat border-r border-line"><div class="label">Joueurs</div><div class="v mt-1">@Model.Players</div></div>
+        <div class="stat"><div class="label">Matchs</div><div class="v mt-1">@Model.Matches</div></div>
+    </div>
+    <div class="form-actions">
+        @if (!present)
+        {
+            <form method="post" action="/admin/demo/creer">
+                <button class="btn btn-primary"><icon name="flask-conical" />Créer les données de démo</button>
+            </form>
+            <p class="self-center text-[13px] text-ink-3">17 ASC, 238 joueurs, 2 zonales en poules de 4 et 5 équipes, résultats et buteurs simulés.</p>
+        }
+        else
+        {
+            <form method="post" action="/admin/demo/supprimer" data-confirm="Supprimer TOUTES les données de démonstration ? Les vraies données ne sont pas touchées.">
+                <button class="btn btn-danger"><icon name="trash-2" />Supprimer les données de démo</button>
+            </form>
+            <p class="self-center text-[13px] text-ink-3">Seuls les éléments marqués « démo » sont supprimés.</p>
+        }
+    </div>
+</section>

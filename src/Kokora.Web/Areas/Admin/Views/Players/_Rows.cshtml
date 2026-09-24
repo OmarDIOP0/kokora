@@ -1,0 +1,35 @@
+@model PlayersPageVm
+@foreach (var p in Model.Items)
+{
+    <li>
+        <a href="/admin/joueurs/@p.Id/modifier" class="row">
+            <span class="grid h-10 w-10 flex-none place-items-center overflow-hidden rounded-full bg-surface-2 text-ink-3">
+                @if (p.PhotoPath is not null)
+                {
+                    <img src="@p.PhotoPath" alt="" width="40" height="40" loading="lazy" class="h-full w-full object-cover" data-photo>
+                }
+                else
+                {
+                    <icon name="user-round" />
+                }
+            </span>
+            <div class="min-w-0 flex-1">
+                <div class="truncate font-semibold">@p.FullName@(p.Nickname is null ? "" : $" « {p.Nickname} »")</div>
+                <div class="truncate text-[13px] text-ink-3">@(p.ClubName ?? "Sans équipe") · @Labels.Of(p.Position)</div>
+            </div>
+            @if (p.ShirtNumber is { } n)
+            {
+                <span class="score w-8 text-right text-[20px] text-ink-2">@n</span>
+            }
+        </a>
+    </li>
+}
+@if (Model.HasMore)
+{
+    @* Défilement infini : la ligne suivante se remplace par la page suivante quand elle devient visible. *@
+    <li hx-get="/admin/joueurs?q=@Uri.EscapeDataString(Model.Search ?? "")&equipe=@Model.ClubId&page=@(Model.Page + 1)"
+        hx-trigger="revealed" hx-swap="outerHTML" class="row" aria-busy="true">
+        <span class="skeleton h-10 w-10 rounded-full"></span>
+        <span class="grid flex-1 gap-2"><span class="skeleton h-3.5 w-40"></span><span class="skeleton h-3 w-24"></span></span>
+    </li>
+}

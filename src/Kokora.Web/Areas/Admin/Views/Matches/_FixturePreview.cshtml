@@ -1,0 +1,36 @@
+@model GenerateFixturesVm
+@{
+    var errors = ViewData.ModelState.Where(e => e.Value?.Errors.Count > 0).SelectMany(e => e.Value!.Errors).Select(e => e.ErrorMessage).ToList();
+}
+@if (errors.Count > 0)
+{
+    <div class="error-summary mt-3">@string.Join(" ", errors)</div>
+}
+@if (Model.Preview is { Count: > 0 } preview)
+{
+    <section class="section">
+        <header class="section-head"><span>Aperçu</span><span class="sub">@preview.Count matchs</span></header>
+        @foreach (var day in preview.GroupBy(f => f.Matchday))
+        {
+            <div class="flex items-center gap-2 border-b border-line bg-surface-2 px-4 py-1.5">
+                <span class="label !text-ink-2">@day.Key<sup>e</sup> journée</span>
+                <span class="ml-auto text-[12.5px] text-ink-3">@KokoraTime.Day(DateOnly.FromDateTime(KokoraTime.ToLocal(day.First().KickoffAt).DateTime))</span>
+            </div>
+            var playing = day.SelectMany(f => new[] { f.HomeId, f.AwayId }).ToHashSet();
+            var bye = Model.Group.Teams.Where(t => !playing.Contains(t.ClubId)).Select(t => t.Club.Name).ToList();
+            @foreach (var f in day)
+            {
+                <div class="row !min-h-11 text-[14px]">
+                    <span class="num w-12 text-ink-2">@KokoraTime.Hour(f.KickoffAt)</span>
+                    <span class="flex-1 truncate text-right">@f.Home</span>
+                    <span class="text-ink-3">-</span>
+                    <span class="flex-1 truncate">@f.Away</span>
+                </div>
+            }
+            @if (bye.Count > 0)
+            {
+                <div class="row !min-h-9 text-[13px] text-ink-3">Exempt : @string.Join(", ", bye)</div>
+            }
+        }
+    </section>
+}

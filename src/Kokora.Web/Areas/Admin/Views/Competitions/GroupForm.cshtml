@@ -1,0 +1,25 @@
+@model GroupInput
+@{
+    var phase = (Kokora.Domain.Competitions.Phase)ViewData["Phase"]!;
+    ViewData["Title"] = Model.Name;
+}
+
+<div class="page-head">
+    <div>
+        <nav class="crumbs"><a href="/admin/competitions/@phase.CompetitionId">@phase.Competition.Name</a><span>/</span><a href="/admin/phases/@phase.Id">@phase.Name</a></nav>
+        <h1>@Model.Name</h1>
+    </div>
+</div>
+
+<section class="section">
+    <form method="post" action="/admin/poules/enregistrer" novalidate>
+        <input type="hidden" asp-for="Id">
+        <input type="hidden" asp-for="PhaseId">
+        <div asp-validation-summary="ModelOnly" class="error-summary mx-4 mt-4"></div>
+        <partial name="_GroupFields" model="Model" view-data="ViewData" />
+        <div class="form-actions sticky-mobile">
+            <button class="btn btn-primary">Enregistrer</button>
+            <a href="/admin/phases/@phase.Id" class="btn btn-ghost">Annuler</a>
+        </div>
+    </form>
+</section>

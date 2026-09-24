@@ -49,8 +49,8 @@ public class StatsService(IAppDbContext db, CompetitionCache cache)
             return new PlayerStatRow(players[k.Item1], k.ClubId is { } c ? clubs.GetValueOrDefault(c) : null, g, p, assistCounts.GetValueOrDefault(k));
         }).ToList();
 
-        // Hommes du match (votes clos des supporters), avec l'équipe du joueur cette saison.
-        var awards = await Engagement.VoteService.AwardsAsync(db, db.Matches.Where(m => compIds.Contains(m.Phase.CompetitionId)), ct);
+        // Hommes du match désignés par l'organisation, avec l'équipe du joueur cette saison.
+        var awards = await ManOfTheMatchAwardsAsync(db.Matches.Where(m => compIds.Contains(m.Phase.CompetitionId)), ct);
         var awardClubs = await db.SquadMembers.AsNoTracking().Where(s => s.SeasonId == seasonId && awards.Keys.Contains(s.PlayerId))
             .ToDictionaryAsync(s => s.PlayerId, s => s.ClubId, ct);
         var awardPlayers = await PlayersAsync(awards.Keys.ToList(), ct);
@@ -77,6 +77,13 @@ public class StatsService(IAppDbContext db, CompetitionCache cache)
             teams.Sum(t => t.GoalsFor),
             motm);
     }
+
+    /// <summary>Joueur → nombre de désignations comme homme du match (matchs réellement joués).</summary>
+    public Task<Dictionary<int, int>> ManOfTheMatchAwardsAsync(IQueryable<Kokora.Domain.Matches.Match> matches, CancellationToken ct) =>
+        matches.Where(m => m.ManOfTheMatchPlayerId != null && RealMatches.Contains(m.Status))
+            .GroupBy(m => m.ManOfTheMatchPlayerId!.Value)
+            .Select(g => new { g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Key, x => x.Count, ct);
 
     /// <summary>Totaux par équipe (matchs joués sur le terrain) et discipline.</summary>
     public async Task<List<TeamStatRow>> TeamRowsAsync(IReadOnlyCollection<int> compIds, CancellationToken ct, int? onlyClub = null)

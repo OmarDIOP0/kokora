@@ -19,6 +19,7 @@ public static class DependencyInjection
         services.AddScoped<DrawImportService>();
         services.AddScoped<DashboardService>();
         services.AddScoped<ResultService>();
+        services.AddScoped<QuickResultService>();
         services.AddScoped<QualificationService>();
         services.AddScoped<DisciplineAdminService>();
         services.AddScoped<ArticleAdminService>();

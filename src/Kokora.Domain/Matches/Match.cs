@@ -55,6 +55,10 @@ public class Match : Entity, IAuditable, IDemoData
     public int? FirstLegMatchId { get; set; }
     public Match? FirstLeg { get; set; }
 
+    /// <summary>Homme du match désigné par l'organisation (le vote des supporters est à part).</summary>
+    public int? ManOfTheMatchPlayerId { get; set; }
+    public Kokora.Domain.Clubs.Player? ManOfTheMatch { get; set; }
+
     public bool IsFeatured { get; set; }
     public string? Notes { get; set; }
     public bool IsDemo { get; set; }

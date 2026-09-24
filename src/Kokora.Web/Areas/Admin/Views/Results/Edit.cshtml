@@ -162,6 +162,21 @@
     <section class="section">
         <div class="form-grid">
             <div class="field">
+                <label for="motm">Homme du match <span class="font-normal text-ink-3">(désigné par l'organisation)</span></label>
+                <select id="motm" name="ManOfTheMatchPlayerId" class="input" data-tom>
+                    <option value="">Non désigné</option>
+                    @foreach (var (team, players) in new[] { (home, Model.Squads[home.Id]), (away, Model.Squads[away.Id]) })
+                    {
+                        <optgroup label="@team.Name">
+                            @foreach (var p in players)
+                            {
+                                <option value="@p.Id" selected="@(i.ManOfTheMatchPlayerId == p.Id)">@(p.Number is { } n ? $"{n} · " : "")@p.Name</option>
+                            }
+                        </optgroup>
+                    }
+                </select>
+            </div>
+            <div class="field">
                 <label for="notes">Notes (visibles sur la fiche du match)</label>
                 <textarea id="notes" name="Notes" class="input textarea" rows="3" maxlength="1000">@i.Notes</textarea>
             </div>

@@ -86,6 +86,25 @@
         </div>
     </section>
 
+    <!-- Homme du match (désigné par l'organisation au coup de sifflet final) -->
+    <section class="section" x-show="s.status === 5 || s.status === 9 || s.period >= 3" x-cloak>
+        <header class="section-head"><span>Homme du match</span>
+            <span class="badge win ml-auto" x-show="s.manOfTheMatchId" x-text="playerName(s.manOfTheMatchId)"></span>
+        </header>
+        <div class="flex gap-2 p-3">
+            <select class="input min-w-0 flex-1" x-model.number="motm" aria-label="Homme du match">
+                <option value="">Choisir le joueur…</option>
+                <optgroup :label="s.home.shortName">
+                    <template x-for="p in s.homeSquad" :key="p.id"><option :value="p.id" x-text="(p.number ? p.number + ' · ' : '') + p.name"></option></template>
+                </optgroup>
+                <optgroup :label="s.away.shortName">
+                    <template x-for="p in s.awaySquad" :key="p.id"><option :value="p.id" x-text="(p.number ? p.number + ' · ' : '') + p.name"></option></template>
+                </optgroup>
+            </select>
+            <button type="button" class="btn btn-primary" :disabled="!motm" @@click="designate()">Désigner</button>
+        </div>
+    </section>
+
     <!-- Chronologie (la plus récente en haut) -->
     <section class="section">
         <header class="section-head"><span>Actions</span><span class="sub" x-text="s.events.length"></span></header>

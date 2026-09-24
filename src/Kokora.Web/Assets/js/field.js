@@ -27,6 +27,7 @@ function fieldMode(initial) {
     connected: false,
     busy: false,
     sheet: null,
+    motm: '',
     goalTypes: [
       { type: T.goal, label: 'But' }, { type: T.penalty, label: 'Penalty' },
       { type: T.ownGoal, label: 'CSC' }, { type: T.missed, label: 'Pen. raté' },
@@ -204,6 +205,16 @@ function fieldMode(initial) {
     cancel(e) {
       if (!window.confirm(`Annuler « ${this.tag(e)}${e.player ? ' · ' + e.player : ''} » ?`)) return;
       this.enqueue(`actions/${e.id}/annuler`, {}, 'Annulation');
+    },
+
+    playerName(id) {
+      return [...this.s.homeSquad, ...this.s.awaySquad].find((p) => p.id === id)?.name ?? '';
+    },
+
+    designate() {
+      if (!this.motm) return;
+      this.enqueue('homme-du-match', { playerId: Number(this.motm) }, 'Homme du match');
+      this.motm = '';
     },
 
     fixMinute() {

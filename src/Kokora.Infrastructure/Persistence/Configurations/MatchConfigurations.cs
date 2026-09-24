@@ -16,6 +16,7 @@ public class MatchConfiguration : IEntityTypeConfiguration<Match>
 
         b.HasOne(x => x.Phase).WithMany(p => p.Matches).OnDelete(DeleteBehavior.Cascade);
         b.HasOne(x => x.Group).WithMany().OnDelete(DeleteBehavior.SetNull);
+        b.HasOne(x => x.ManOfTheMatch).WithMany().HasForeignKey(x => x.ManOfTheMatchPlayerId).OnDelete(DeleteBehavior.SetNull);
         b.HasOne(x => x.Round).WithMany().OnDelete(DeleteBehavior.SetNull);
         b.HasOne(x => x.HomeClub).WithMany().OnDelete(DeleteBehavior.Restrict);
         b.HasOne(x => x.AwayClub).WithMany().OnDelete(DeleteBehavior.Restrict);

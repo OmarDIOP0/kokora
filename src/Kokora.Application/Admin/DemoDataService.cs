@@ -383,7 +383,29 @@ public class DemoDataService(IAppDbContext db, CompetitionCache cache)
             total += count;
         }
         await db.SaveChangesAsync(ct);
+        await DesignateFictitiousManOfTheMatchAsync(seasonId, rng, ct);
         return total;
+    }
+
+    /// <summary>Homme du match « officiel » fictif des matchs de démo joués : le joueur le plus décisif, sinon un joueur au hasard.</summary>
+    public async Task<int> DesignateFictitiousManOfTheMatchAsync(int seasonId, Random rng, CancellationToken ct = default)
+    {
+        var matches = await db.Matches.Include(m => m.Events)
+            .Where(m => m.IsDemo && m.Phase.Competition.SeasonId == seasonId && m.Status == MatchStatus.Finished && m.ManOfTheMatchPlayerId == null
+                && m.HomeClubId != null && m.AwayClubId != null)
+            .ToListAsync(ct);
+        var squads = (await db.SquadMembers.AsNoTracking().Where(s => s.SeasonId == seasonId).Select(s => new { s.ClubId, s.PlayerId }).ToListAsync(ct))
+            .GroupBy(s => s.ClubId).ToDictionary(g => g.Key, g => g.Select(s => s.PlayerId).ToList());
+        foreach (var m in matches)
+        {
+            var decisive = m.Events.Where(e => !e.IsCancelled && e.PlayerId != null && e.Type is MatchEventType.Goal or MatchEventType.PenaltyGoal)
+                .SelectMany(e => new[] { e.PlayerId, e.PlayerId, e.AssistPlayerId }).OfType<int>()
+                .GroupBy(id => id).OrderByDescending(g => g.Count()).Select(g => g.Key).FirstOrDefault();
+            var pool = squads.GetValueOrDefault(m.HomeClubId!.Value, []).Concat(squads.GetValueOrDefault(m.AwayClubId!.Value, [])).ToList();
+            m.ManOfTheMatchPlayerId = decisive != 0 ? decisive : pool.Count > 0 ? pool[rng.Next(pool.Count)] : null;
+        }
+        await db.SaveChangesAsync(ct);
+        return matches.Count;
     }
 
     /// <summary>Simule un résultat et ses événements (buteurs, passeurs, cartons) de façon reproductible.</summary>

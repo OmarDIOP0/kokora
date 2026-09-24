@@ -8,6 +8,7 @@ namespace Kokora.Web.Areas.Admin.Controllers;
 
 public record PeriodRequest(LivePeriod To);
 public record MinuteRequest(int Minute);
+public record ManOfTheMatchRequest(int? PlayerId);
 
 /// <summary>
 /// Mode terrain : écran de saisie en direct, pensé pour un téléphone au bord du terrain.
@@ -53,6 +54,10 @@ public class DirectController(LiveMatchService live) : AdminController
     [HttpPost("{id:int}/actions/{eventId:int}/annuler")]
     public Task<IActionResult> CancelEvent(int id, int eventId, CancellationToken ct) =>
         Run(id, () => live.CancelEventAsync(id, eventId, ct), ct);
+
+    [HttpPost("{id:int}/homme-du-match")]
+    public Task<IActionResult> ManOfTheMatch(int id, [FromBody] ManOfTheMatchRequest request, CancellationToken ct) =>
+        Run(id, () => live.SetManOfTheMatchAsync(id, request.PlayerId, ct), ct);
 
     [HttpPost("{id:int}/minute")]
     public Task<IActionResult> Minute(int id, [FromBody] MinuteRequest request, CancellationToken ct) =>

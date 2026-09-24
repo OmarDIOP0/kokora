@@ -7,8 +7,8 @@
 {
     <section class="section" id="vote-@Model.MatchId">
         <header class="section-head">
-            <span>Homme du match</span>
-            <span class="sub">@(b.Open ? "vote des supporters" : "vote terminé") · @b.Total vote@(b.Total > 1 ? "s" : "")</span>
+            <span>Vote des supporters</span>
+            <span class="sub">@(b.Open ? "votre homme du match" : "vote terminé") · @b.Total vote@(b.Total > 1 ? "s" : "")</span>
         </header>
 
         @if (b.Results.Count > 0)

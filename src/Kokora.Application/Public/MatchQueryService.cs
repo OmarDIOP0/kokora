@@ -95,6 +95,7 @@ public class MatchQueryService(IAppDbContext db)
             .Include(x => x.Events).ThenInclude(e => e.AssistPlayer)
             .Include(x => x.Events).ThenInclude(e => e.PlayerOut)
             .Include(x => x.Lineups).ThenInclude(l => l.Player)
+            .Include(x => x.ManOfTheMatch)
             .WithRowData().AsSplitQuery().FirstOrDefaultAsync(ct);
         if (m is null) return null;
 
@@ -129,6 +130,12 @@ public class MatchQueryService(IAppDbContext db)
             h2h.Count(x => x.ShowScore && x.Outcome == 0),
             h2h.Count(x => x.Outcome != 0 && (x.Outcome == 1 ? x.Home?.Id : x.Away?.Id) == m.AwayClubId));
 
+        // Équipe de l'homme du match (effectif de la saison).
+        var motmClub = m.ManOfTheMatchPlayerId is { } motmId
+            ? await db.SquadMembers.AsNoTracking().Where(s => s.PlayerId == motmId && s.SeasonId == comp.SeasonId)
+                .Select(s => (int?)s.ClubId).FirstOrDefaultAsync(ct)
+            : null;
+
         return new MatchDetailVm
         {
             Match = row,
@@ -146,7 +153,9 @@ public class MatchQueryService(IAppDbContext db)
             HomeRed = Count(m.HomeClubId, MatchEventType.RedCard, MatchEventType.SecondYellow),
             AwayRed = Count(m.AwayClubId, MatchEventType.RedCard, MatchEventType.SecondYellow),
             HomeHalfTime = m.HomeHalfTimeScore,
-            AwayHalfTime = m.AwayHalfTimeScore
+            AwayHalfTime = m.AwayHalfTimeScore,
+            ManOfTheMatch = m.ManOfTheMatch is { } p ? StatsService.ToVm(p, null) : null,
+            ManOfTheMatchTeam = motmClub == m.HomeClubId ? row.Home : motmClub == m.AwayClubId ? row.Away : null
         };
     }
 

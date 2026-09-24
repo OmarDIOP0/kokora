@@ -130,6 +130,9 @@ public record MatchDetailVm
     public int? HomeHalfTime { get; init; }
     public int? AwayHalfTime { get; init; }
     public (int HomeWins, int Draws, int AwayWins) HeadToHeadSummary { get; init; }
+    /// <summary>Homme du match désigné par l'organisation.</summary>
+    public PlayerVm? ManOfTheMatch { get; init; }
+    public TeamVm? ManOfTheMatchTeam { get; init; }
 }
 
 public record DayInfo(DateOnly Day, int Matches, bool HasLive);

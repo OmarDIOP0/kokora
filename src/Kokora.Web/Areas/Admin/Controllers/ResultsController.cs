@@ -50,7 +50,7 @@ public class ResultsController(ResultService results, IAppDbContext db) : AdminC
             {
                 await results.SaveAsync(input, ct);
                 Flash("Résultat enregistré. Classements mis à jour.");
-                return Redirect("/admin/matchs?sansResultat=true");
+                return Redirect("/admin/resultats");
             }
             catch (BusinessRuleException ex) { AddError(ex); }
         }

@@ -29,25 +29,6 @@ public class VoteService(IAppDbContext db)
         m.Status is MatchStatus.Finished or MatchStatus.UnderReview && m.HomeClubId is not null && m.AwayClubId is not null
         && ClosesAt(m) is { } c && now < c;
 
-    /// <summary>
-    /// Hommes du match désignés (votes clos) parmi les matchs donnés : joueur → nombre de titres.
-    /// Vainqueur d'un match : le plus de voix ; à égalité, celui qui a atteint ce total le premier.
-    /// </summary>
-    public static async Task<Dictionary<int, int>> AwardsAsync(IAppDbContext db, IQueryable<Match> matches, CancellationToken ct = default)
-    {
-        var closedBefore = DateTimeOffset.UtcNow.AddHours(-2).Subtract(Window);
-        var votes = await db.ManOfTheMatchVotes.AsNoTracking()
-            .Where(v => matches.Any(m => m.Id == v.MatchId && m.KickoffAt < closedBefore
-                && (m.Status == MatchStatus.Finished || m.Status == MatchStatus.UnderReview)))
-            .Select(v => new { v.MatchId, v.PlayerId, v.CreatedAt })
-            .ToListAsync(ct);
-        return votes.GroupBy(v => v.MatchId)
-            .Select(g => g.GroupBy(v => v.PlayerId)
-                .OrderByDescending(p => p.Count()).ThenBy(p => p.Max(v => v.CreatedAt)).First().Key)
-            .GroupBy(playerId => playerId)
-            .ToDictionary(g => g.Key, g => g.Count());
-    }
-
     public async Task<VoteBlock?> BlockAsync(int matchId, string? userId, CancellationToken ct = default)
     {
         var m = await db.Matches.AsNoTracking().Include(x => x.Phase).ThenInclude(p => p.Competition)

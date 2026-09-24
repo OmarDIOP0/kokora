@@ -221,7 +221,8 @@
       min-height: 52px;
     }
     .match.wide .match-teams, .match.wide .match-scores { display: contents; }
-    .match.wide .match-team.home { grid-column: 2; grid-row: 1; justify-content: flex-end; text-align: right; flex-direction: row-reverse; }
+    /* Ordre inversé (nom puis écusson) : avec row-reverse, « flex-start » colle le bloc à droite, contre le score. */
+    .match.wide .match-team.home { grid-column: 2; grid-row: 1; justify-content: flex-start; text-align: right; flex-direction: row-reverse; }
     .match.wide .match-team.away { grid-column: 4; grid-row: 1; }
     .match.wide .match-scores .score { display: none; }
     .match.wide .scoreline { display: flex; grid-column: 3; grid-row: 1; }
@@ -742,6 +743,15 @@
   font-size: 32px; color: #a2aba5; }
 .share-card .sc-brand { font-family: var(--font-display); font-weight: 700; font-size: 52px; color: #eaeeeb; }
 .share-card .sc-brand b { color: #3fb872; }
+
+/* ---------- Saisie rapide des résultats (admin) ---------- */
+@layer components {
+  .quick-row { display: grid; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--line); box-shadow: inset 3px 0 0 var(--comp, var(--brand)); }
+  .quick-row.has-error { background: color-mix(in srgb, var(--loss) 6%, transparent); }
+  .quick-score { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; }
+  .quick-input { width: 52px; height: 48px; padding: 0; text-align: center; font-size: 22px; -moz-appearance: textfield; appearance: textfield; }
+  .quick-input::-webkit-outer-spin-button, .quick-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+}
 
 /* ---------- Pronostics ---------- */
 @layer components {

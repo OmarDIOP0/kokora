@@ -28,6 +28,9 @@ public class ResultInput
     [Display(Name = "Équipe forfait")]
     public int? ForfeitingClubId { get; set; }
 
+    [Display(Name = "Homme du match")]
+    public int? ManOfTheMatchPlayerId { get; set; }
+
     [StringLength(1000)] [Display(Name = "Notes (visibles sur la fiche du match)")]
     public string? Notes { get; set; }
 
@@ -72,7 +75,7 @@ public class ResultService(IAppDbContext db, CompetitionCache cache, Qualificati
         HomeScore = m.HomeScore, AwayScore = m.AwayScore,
         HomeHalfTimeScore = m.HomeHalfTimeScore, AwayHalfTimeScore = m.AwayHalfTimeScore,
         WentToExtraTime = m.WentToExtraTime, HomePenalties = m.HomePenalties, AwayPenalties = m.AwayPenalties,
-        ForfeitingClubId = m.ForfeitingClubId, Notes = m.Notes,
+        ForfeitingClubId = m.ForfeitingClubId, Notes = m.Notes, ManOfTheMatchPlayerId = m.ManOfTheMatchPlayerId,
         Events = m.Events.Where(e => !e.IsCancelled && EditableEvents.Contains(e.Type))
             .OrderBy(e => e.Period).ThenBy(e => e.Minute).ThenBy(e => e.Id)
             .Select(e => new ResultEventInput
@@ -168,6 +171,11 @@ public class ResultService(IAppDbContext db, CompetitionCache cache, Qualificati
                 throw new BusinessRuleException("Passeur invalide (même joueur que le buteur ou mauvaise équipe).");
         }
 
+        if (input.ManOfTheMatchPlayerId is { } motm && !await db.SquadMembers.AnyAsync(s => s.SeasonId == seasonId && s.PlayerId == motm
+                && (s.ClubId == home || s.ClubId == away), ct))
+            throw new BusinessRuleException("L'homme du match doit être un joueur de l'une des deux équipes.", nameof(input.ManOfTheMatchPlayerId));
+        m.ManOfTheMatchPlayerId = input.Status is MatchStatus.Finished or MatchStatus.UnderReview ? input.ManOfTheMatchPlayerId : null;
+
         m.Status = input.Status;
         m.HomeScore = input.HomeScore;
         m.AwayScore = input.AwayScore;
@@ -221,6 +229,7 @@ public class ResultService(IAppDbContext db, CompetitionCache cache, Qualificati
         m.HomeScore = m.AwayScore = m.HomeHalfTimeScore = m.AwayHalfTimeScore = m.HomePenalties = m.AwayPenalties = null;
         m.WentToExtraTime = false;
         m.ForfeitingClubId = null;
+        m.ManOfTheMatchPlayerId = null;
         m.LivePeriod = LivePeriod.NotStarted;
         m.PeriodStartedAt = null;
         foreach (var e in m.Events.ToList()) db.MatchEvents.Remove(e);

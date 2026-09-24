@@ -54,6 +54,7 @@ public record LiveStateVm
     public IReadOnlyList<LivePlayerVm> HomeSquad { get; init; } = [];
     public IReadOnlyList<LivePlayerVm> AwaySquad { get; init; } = [];
     public IReadOnlyList<LiveEventVm> Events { get; init; } = [];
+    public int? ManOfTheMatchId { get; init; }
 }
 
 /// <summary>
@@ -132,7 +133,8 @@ public class LiveMatchService(IAppDbContext db, CompetitionCache cache, Qualific
                 .OrderByDescending(e => e.Period).ThenByDescending(e => e.Minute).ThenByDescending(e => e.AddedTime ?? 0).ThenByDescending(e => e.Id)
                 .Select(e => new LiveEventVm(e.Id, e.Type, e.Period, e.MinuteLabel, e.ClubId == m.HomeClubId,
                     Name(e.PlayerId), Name(e.AssistPlayerId), Name(e.PlayerOutId), e.IsScored))
-                .ToList()
+                .ToList(),
+            ManOfTheMatchId = m.ManOfTheMatchPlayerId
         };
     }
 
@@ -194,6 +196,19 @@ public class LiveMatchService(IAppDbContext db, CompetitionCache cache, Qualific
             await predictions.ScoreMatchAsync(m.Id, ct);
             await push.MatchAsync(m, Engagement.MatchPushKind.FullTime, $"{m.Phase.Competition.Name} · {Mapping.Stage(m)}", ct);
         }
+    }
+
+    /// <summary>Homme du match désigné par l'organisation, en général juste après le coup de sifflet final.</summary>
+    public async Task SetManOfTheMatchAsync(int id, int? playerId, CancellationToken ct = default)
+    {
+        var m = await LoadAsync(id, ct);
+        if (m.Status is not (MatchStatus.Finished or MatchStatus.UnderReview or MatchStatus.Live or MatchStatus.HalfTime))
+            throw new BusinessRuleException("L'homme du match se désigne pendant ou après le match.");
+        if (playerId is { } p && !await db.SquadMembers.AnyAsync(s => s.SeasonId == m.Phase.Competition.SeasonId && s.PlayerId == p
+                && (s.ClubId == m.HomeClubId || s.ClubId == m.AwayClubId), ct))
+            throw new BusinessRuleException("Ce joueur n'est dans aucune des deux équipes.");
+        m.ManOfTheMatchPlayerId = playerId;
+        await SaveAsync(m, null, ct);
     }
 
     /// <summary>Recale le chronomètre sur la minute annoncée par l'arbitre.</summary>

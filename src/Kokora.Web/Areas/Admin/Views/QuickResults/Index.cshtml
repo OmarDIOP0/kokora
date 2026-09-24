@@ -1,0 +1,111 @@
+@model Kokora.Web.Areas.Admin.Controllers.QuickResultsPageVm
+@{
+    ViewData["Title"] = "Saisie rapide";
+    var comp = Model.CompetitionId is { } c ? $"&competition={c}" : "";
+    var motmTab = Model.Tab == "hommes-du-match";
+    string Date(QuickMatchVm m) => m.KickoffAt is { } k ? KokoraTime.ToLocal(k).ToString("ddd d MMM · HH'h'mm", KokoraTime.Fr) : "Date ?";
+}
+
+<div class="page-head">
+    <div>
+        <nav class="crumbs"><a href="/admin/matchs">Calendrier</a></nav>
+        <h1>Saisie rapide</h1>
+        <p class="mt-1 max-w-[64ch] text-[14px] text-ink-2">
+            Tous les matchs d'un coup : un score (ou un forfait) et l'homme du match par ligne, puis « Enregistrer ».
+            Les lignes laissées vides sont ignorées. Buteurs et cartons se complètent ensuite dans la fiche du match.
+        </p>
+    </div>
+    <form method="get" class="flex gap-2">
+        <input type="hidden" name="onglet" value="@Model.Tab">
+        <select name="competition" class="input !w-auto" aria-label="Compétition" data-autosubmit>
+            <option value="">Toutes les compétitions</option>
+            @foreach (var o in Model.Competitions) { <option value="@o.Value" selected="@(o.Value == Model.CompetitionId?.ToString())">@o.Text</option> }
+        </select>
+    </form>
+</div>
+
+<section class="section">
+    <nav class="tabs">
+        <a href="/admin/resultats?onglet=resultats@(comp)" class="tab @(motmTab ? "" : "is-active")">Résultats à saisir <span class="num ml-1 text-ink-3">@Model.Pending.Count</span></a>
+        <a href="/admin/resultats?onglet=hommes-du-match@(comp)" class="tab @(motmTab ? "is-active" : "")">Hommes du match à désigner <span class="num ml-1 text-ink-3">@Model.WithoutMotm.Count</span></a>
+    </nav>
+
+    @{ var list = motmTab ? Model.WithoutMotm : Model.Pending; }
+    @if (list.Count == 0)
+    {
+        <div class="empty border-t border-line">
+            <strong>@(motmTab ? "Tous les hommes du match sont désignés" : "Aucun résultat en attente")</strong>
+            @(motmTab ? "Chaque match joué a son homme du match." : "Tous les matchs passés ont un résultat.")
+        </div>
+    }
+    else
+    {
+        <form method="post" action="/admin/resultats@(motmTab ? "/hommes-du-match" : "")@(Model.CompetitionId is { } cc ? $"?competition={cc}" : "")">
+            @for (var i = 0; i < list.Count; i++)
+            {
+                var m = list[i];
+                var v = Model.Values.GetValueOrDefault(m.Id);
+                var error = Model.Errors.GetValueOrDefault(m.Id);
+                <div class="quick-row @(error is null ? "" : "has-error")" style="--comp:@m.CompetitionColor">
+                    <input type="hidden" name="rows[@i].MatchId" value="@m.Id">
+                    <div class="flex items-center gap-1.5 text-[12px] text-ink-3">
+                        <span class="comp-swatch !h-2 !w-2"></span>
+                        <span class="truncate">@Date(m) · @m.Competition · @m.Stage</span>
+                        <a href="/admin/matchs/@m.Id/resultat" class="ml-auto whitespace-nowrap font-semibold text-brand">Fiche complète</a>
+                    </div>
+                    <div class="quick-score">
+                        <span class="flex min-w-0 items-center justify-end gap-2 text-right"><span class="truncate font-semibold">@m.Home.ShortName</span><crest team="m.Home" /></span>
+                        @if (motmTab)
+                        {
+                            <span class="score px-2 text-[22px]">@m.HomeScore - @m.AwayScore</span>
+                        }
+                        else
+                        {
+                            <span class="flex items-center gap-1">
+                                <input type="number" name="rows[@i].HomeScore" value="@v?.HomeScore" min="0" max="50" inputmode="numeric" class="input score quick-input" aria-label="Buts @m.Home.Name">
+                                <span class="text-ink-3">-</span>
+                                <input type="number" name="rows[@i].AwayScore" value="@v?.AwayScore" min="0" max="50" inputmode="numeric" class="input score quick-input" aria-label="Buts @m.Away.Name">
+                            </span>
+                        }
+                        <span class="flex min-w-0 items-center gap-2"><crest team="m.Away" /><span class="truncate font-semibold">@m.Away.ShortName</span></span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        @if (!motmTab && m.Knockout)
+                        {
+                            <span class="inline-flex items-center gap-1 text-[13px] text-ink-2">Tirs au but
+                                <input type="number" name="rows[@i].HomePenalties" value="@v?.HomePenalties" min="0" max="50" inputmode="numeric" class="input score quick-input !h-9 !text-[16px]" aria-label="Tirs au but @m.Home.Name">
+                                -
+                                <input type="number" name="rows[@i].AwayPenalties" value="@v?.AwayPenalties" min="0" max="50" inputmode="numeric" class="input score quick-input !h-9 !text-[16px]" aria-label="Tirs au but @m.Away.Name">
+                            </span>
+                        }
+                        @if (!motmTab)
+                        {
+                            <select name="rows[@i].Forfeit" class="input !min-h-9 !w-auto !py-0 !text-[14px]" aria-label="Forfait">
+                                <option value="">Match joué</option>
+                                <option value="home" selected="@(v?.Forfeit == "home")">Forfait de @m.Home.ShortName</option>
+                                <option value="away" selected="@(v?.Forfeit == "away")">Forfait de @m.Away.ShortName</option>
+                            </select>
+                        }
+                        <select name="rows[@i].ManOfTheMatchPlayerId" class="input !min-h-9 min-w-0 flex-1 !py-0 !text-[14px]" aria-label="Homme du match">
+                            <option value="">Homme du match…</option>
+                            @foreach (var (team, players) in new[] { (m.Home, m.HomeSquad), (m.Away, m.AwaySquad) })
+                            {
+                                <optgroup label="@team.ShortName">
+                                    @foreach (var p in players)
+                                    {
+                                        <option value="@p.Id" selected="@(v?.ManOfTheMatchPlayerId == p.Id)">@(p.Number is { } n ? $"{n} · " : "")@p.Name</option>
+                                    }
+                                </optgroup>
+                            }
+                        </select>
+                    </div>
+                    @if (error is not null) { <p class="text-[13px] font-medium text-loss" role="alert">@error</p> }
+                </div>
+            }
+            <div class="form-actions sticky-mobile">
+                <button class="btn btn-primary"><icon name="check" />@(motmTab ? "Enregistrer les hommes du match" : "Enregistrer les résultats")</button>
+                <span class="self-center text-[13px] text-ink-3">Les lignes vides sont ignorées.</span>
+            </div>
+        </form>
+    }
+</section>

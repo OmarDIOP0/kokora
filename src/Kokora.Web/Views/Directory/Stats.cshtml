@@ -44,6 +44,7 @@
         </div>
         <partial name="_PlayerRanking" model="d.Assists" view-data='new ViewDataDictionary(ViewData) { ["Metric"] = "assists", ["Title"] = "Passeurs décisifs", ["Empty"] = "Aucune passe décisive enregistrée." }' />
         <partial name="_PlayerRanking" model="d.Contributions" view-data='new ViewDataDictionary(ViewData) { ["Metric"] = "contrib", ["Title"] = "Gestes décisifs (buts + passes)" }' />
+        <partial name="_PlayerRanking" model="d.MenOfTheMatch ?? []" view-data='new ViewDataDictionary(ViewData) { ["Metric"] = "motm", ["Title"] = "Hommes du match (vote des supporters)", ["Empty"] = "Aucun vote terminé : l&apos;homme du match est désigné 48 h après chaque match." }' />
     </div>
 
     <!-- Équipes -->

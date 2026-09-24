@@ -3,11 +3,12 @@
 @{
     var metric = ViewData["Metric"] as string ?? "goals";
     const int Top = 10;
-    int Value(PlayerStatRow r) => metric switch { "assists" => r.Assists, "contrib" => r.Contributions, _ => r.Goals };
+    int Value(PlayerStatRow r) => metric switch { "assists" => r.Assists, "contrib" => r.Contributions, "motm" => r.ManOfTheMatch, _ => r.Goals };
     string Detail(PlayerStatRow r) => metric switch
     {
         "contrib" => $"{r.Goals} but{(r.Goals > 1 ? "s" : "")} · {r.Assists} passe{(r.Assists > 1 ? "s" : "")}",
         "goals" when r.Penalties > 0 => $"dont {r.Penalties} pén.",
+        "motm" when r.Contributions > 0 => $"{r.Goals} but{(r.Goals > 1 ? "s" : "")} · {r.Assists} passe{(r.Assists > 1 ? "s" : "")}",
         _ => ""
     };
     var rank = 0; var previous = -1; var i = 0;

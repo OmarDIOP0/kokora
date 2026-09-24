@@ -48,6 +48,14 @@ public class DrawImportTests(DrawFixture fx) : IClassFixture<DrawFixture>
         fill.Matches.Should().Be(10 + 10 + 6);
         fill.Played.Should().BeGreaterThan(0);
 
+        // Votes fictifs : un homme du match désigné pour chaque match joué dont le vote est clos (48 h).
+        var stats = await sp.GetRequiredService<Kokora.Application.Public.StatsService>().GetAsync(seasonId, null);
+        var closed = await db.Matches.CountAsync(m => m.Phase.Competition.SeasonId == seasonId && m.Status == Kokora.Domain.Enums.MatchStatus.Finished
+            && m.KickoffAt < DateTimeOffset.UtcNow.AddHours(-50));
+        closed.Should().BeGreaterThan(0);
+        stats.MenOfTheMatch!.Sum(r => r.ManOfTheMatch).Should().Be(closed);
+        stats.MenOfTheMatch!.Select(r => r.ManOfTheMatch).Should().BeInDescendingOrder();
+
         // Suppression du fictif : équipes et poules réelles conservées.
         await sp.GetRequiredService<DemoDataService>().PurgeAsync();
         (await db.Matches.CountAsync(m => m.Phase.Competition.SeasonId == seasonId && m.GroupId != null)).Should().Be(0); // tableaux vides des 4 Grandes conservés

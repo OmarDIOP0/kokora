@@ -110,7 +110,8 @@ public class DirectoryService(IAppDbContext db, StatsService stats, StandingsSer
             matchIds.Count,
             own.Count(e => Scored(e.Type)), own.Count(e => e.Type == MatchEventType.PenaltyGoal), assists.Count,
             own.Count(e => e.Type == MatchEventType.YellowCard), own.Count(e => e.Type is MatchEventType.RedCard or MatchEventType.SecondYellow),
-            byComp, matchRows, suspensions);
+            byComp, matchRows, suspensions,
+            (await Engagement.VoteService.AwardsAsync(db, db.Matches.Where(m => m.HomeClubId != null), ct)).GetValueOrDefault(player.Id));
     }
 
     /// <summary>Recherche insensible aux accents (via les slugs) : équipes puis joueurs.</summary>

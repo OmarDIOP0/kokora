@@ -186,6 +186,7 @@ public class DemoDataService(IAppDbContext db, CompetitionCache cache)
 
         await db.SaveChangesAsync(ct);
         await SeedArticlesAsync(clubs, ct);
+        await AddFictitiousVotesAsync(season.Id, rng, ct);
     }
 
     /// <summary>Quelques infos fictives (titres marqués « démo ») pour voir la page Infos remplie.</summary>
@@ -343,8 +344,46 @@ public class DemoDataService(IAppDbContext db, CompetitionCache cache)
             }
         }
         await db.SaveChangesAsync(ct);
+        await AddFictitiousVotesAsync(seasonId, rng, ct);
         foreach (var compId in groups.Select(g => g.Phase.CompetitionId).Distinct()) cache.Invalidate(compId);
         return new FillReport(playersCreated, matchesCreated, played);
+    }
+
+    /// <summary>
+    /// Votes « homme du match » fictifs (comptes « fictif-N », sans compte réel) sur les matchs de démo joués :
+    /// les buteurs et passeurs reçoivent plus de voix. Supprimés avec les matchs de démo.
+    /// </summary>
+    public async Task<int> AddFictitiousVotesAsync(int seasonId, Random? random = null, CancellationToken ct = default)
+    {
+        var rng = random ?? new Random(seasonId * 17 + 3);
+        var matches = await db.Matches.AsNoTracking()
+            .Where(m => m.IsDemo && m.Phase.Competition.SeasonId == seasonId && m.Status == MatchStatus.Finished
+                && m.HomeClubId != null && m.AwayClubId != null && !db.ManOfTheMatchVotes.Any(v => v.MatchId == m.Id))
+            .Select(m => new
+            {
+                m.Id, Home = m.HomeClubId!.Value, Away = m.AwayClubId!.Value,
+                Goals = m.Events.Where(e => !e.IsCancelled && e.PlayerId != null && (e.Type == MatchEventType.Goal || e.Type == MatchEventType.PenaltyGoal))
+                    .Select(e => new { e.PlayerId, e.AssistPlayerId }).ToList()
+            })
+            .ToListAsync(ct);
+        var squads = (await db.SquadMembers.AsNoTracking().Where(s => s.SeasonId == seasonId).Select(s => new { s.ClubId, s.PlayerId }).ToListAsync(ct))
+            .GroupBy(s => s.ClubId).ToDictionary(g => g.Key, g => g.Select(s => s.PlayerId).ToList());
+        var total = 0;
+        foreach (var m in matches)
+        {
+            var pool = squads.GetValueOrDefault(m.Home, []).Concat(squads.GetValueOrDefault(m.Away, [])).ToList();
+            var decisive = m.Goals.SelectMany(g => new[] { g.PlayerId, g.AssistPlayerId }).OfType<int>().Where(pool.Contains).ToList();
+            if (pool.Count == 0) continue;
+            var count = rng.Next(4, 16);
+            for (var i = 0; i < count; i++)
+            {
+                var playerId = decisive.Count > 0 && rng.Next(100) < 70 ? decisive[rng.Next(decisive.Count)] : pool[rng.Next(pool.Count)];
+                db.ManOfTheMatchVotes.Add(new Kokora.Domain.Users.ManOfTheMatchVote { MatchId = m.Id, UserId = $"fictif-{i + 1}", PlayerId = playerId });
+            }
+            total += count;
+        }
+        await db.SaveChangesAsync(ct);
+        return total;
     }
 
     /// <summary>Simule un résultat et ses événements (buteurs, passeurs, cartons) de façon reproductible.</summary>

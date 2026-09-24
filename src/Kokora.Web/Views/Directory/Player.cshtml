@@ -46,7 +46,7 @@
             @foreach (var (label, value, cls) in new (string, int, string)[]
             {
                 ("Matchs", Model.Appearances, ""), ("Buts", Model.Goals, ""), ("Passes déc.", Model.Assists, ""),
-                ("Penaltys", Model.Penalties, ""), ("Jaunes", Model.Yellow, ""), ("Rouges", Model.Red, Model.Red > 0 ? "text-loss" : "")
+                ("Homme du match", Model.ManOfTheMatch, Model.ManOfTheMatch > 0 ? "text-accent" : ""), ("Jaunes", Model.Yellow, ""), ("Rouges", Model.Red, Model.Red > 0 ? "text-loss" : "")
             })
             {
                 <div class="stat border-b border-r border-line"><div class="label">@label</div><div class="v mt-1 @cls">@value</div></div>

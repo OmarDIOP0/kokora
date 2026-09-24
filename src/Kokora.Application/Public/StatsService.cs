@@ -49,6 +49,21 @@ public class StatsService(IAppDbContext db, CompetitionCache cache)
             return new PlayerStatRow(players[k.Item1], k.ClubId is { } c ? clubs.GetValueOrDefault(c) : null, g, p, assistCounts.GetValueOrDefault(k));
         }).ToList();
 
+        // Hommes du match (votes clos des supporters), avec l'équipe du joueur cette saison.
+        var awards = await Engagement.VoteService.AwardsAsync(db, db.Matches.Where(m => compIds.Contains(m.Phase.CompetitionId)), ct);
+        var awardClubs = await db.SquadMembers.AsNoTracking().Where(s => s.SeasonId == seasonId && awards.Keys.Contains(s.PlayerId))
+            .ToDictionaryAsync(s => s.PlayerId, s => s.ClubId, ct);
+        var awardPlayers = await PlayersAsync(awards.Keys.ToList(), ct);
+        var awardTeams = await ClubsAsync(awardClubs.Values.Distinct().ToList(), ct);
+        var motm = awards.Where(a => awardPlayers.ContainsKey(a.Key))
+            .Select(a =>
+            {
+                var stat = rows.FirstOrDefault(r => r.Player.Id == a.Key);
+                var team = awardClubs.TryGetValue(a.Key, out var c) ? awardTeams.GetValueOrDefault(c) : stat?.Team;
+                return new PlayerStatRow(awardPlayers[a.Key], team, stat?.Goals ?? 0, stat?.Penalties ?? 0, stat?.Assists ?? 0, a.Value);
+            })
+            .OrderByDescending(r => r.ManOfTheMatch).ThenByDescending(r => r.Contributions).ThenBy(r => r.Player.Name).ToList();
+
         var teams = await TeamRowsAsync(compIds, ct);
         var (suspended, threatened) = await DisciplineAsync(comps.Select(c => (c.Id, c.Name, c.Suspensions)).ToList(), ct);
 
@@ -59,7 +74,8 @@ public class StatsService(IAppDbContext db, CompetitionCache cache)
             teams,
             suspended, threatened,
             teams.Sum(t => t.Played) / 2,
-            teams.Sum(t => t.GoalsFor));
+            teams.Sum(t => t.GoalsFor),
+            motm);
     }
 
     /// <summary>Totaux par équipe (matchs joués sur le terrain) et discipline.</summary>

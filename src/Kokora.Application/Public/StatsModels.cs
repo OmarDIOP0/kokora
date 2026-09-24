@@ -8,7 +8,7 @@ public record PlayerVm(int Id, string Name, string Slug, string? PhotoUrl, Playe
     public string Url => $"/joueurs/{Slug}";
 }
 
-public record PlayerStatRow(PlayerVm Player, TeamVm? Team, int Goals, int Penalties, int Assists)
+public record PlayerStatRow(PlayerVm Player, TeamVm? Team, int Goals, int Penalties, int Assists, int ManOfTheMatch = 0)
 {
     public int Contributions => Goals + Assists;
 }
@@ -37,7 +37,8 @@ public record StatsPageData(
     IReadOnlyList<TeamStatRow> Teams,
     IReadOnlyList<SuspensionRowVm> Suspended,
     IReadOnlyList<ThreatenedVm> Threatened,
-    int MatchesPlayed, int Goals);
+    int MatchesPlayed, int Goals,
+    IReadOnlyList<PlayerStatRow>? MenOfTheMatch = null);
 
 public record PlayerMatchLine(MatchRowVm Match, int Goals, int Assists, bool Yellow, bool Red);
 
@@ -46,7 +47,8 @@ public record PlayerPageData(
     int Appearances, int Goals, int Penalties, int Assists, int Yellow, int Red,
     IReadOnlyList<(string Competition, int Goals, int Assists, int Yellow, int Red)> ByCompetition,
     IReadOnlyList<PlayerMatchLine> Matches,
-    IReadOnlyList<SuspensionRowVm> Suspensions);
+    IReadOnlyList<SuspensionRowVm> Suspensions,
+    int ManOfTheMatch = 0);
 
 public record TeamPageData(
     TeamVm Team, string? Neighborhood, string? Zone, int? FoundedYear, string? SeasonName,

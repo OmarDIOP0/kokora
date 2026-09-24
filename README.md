@@ -54,7 +54,7 @@ tests/
    dotnet user-secrets --project src/Kokora.Web set "Bootstrap:SuperAdmin:Password" "UnMotDePasseSolide2026"
    ```
 
-   L'identifiant peut être un e-mail ou un numéro de téléphone. Une fois le compte créé, vous pouvez supprimer ces deux secrets.
+   Le compte est créé **au démarrage** : si l'application tourne déjà, redémarrez-la. L'identifiant peut être un e-mail ou un numéro de téléphone. Une fois le compte créé, vous pouvez supprimer ces deux secrets.
 
 4. Installer les paquets front et construire CSS/JS :
 

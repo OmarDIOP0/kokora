@@ -28,8 +28,13 @@ public class DbInitializer(
 
         var login = config["Bootstrap:SuperAdmin:Login"];
         var password = config["Bootstrap:SuperAdmin:Password"];
-        if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password)) return;
         if ((await users.GetUsersInRoleAsync(Roles.SuperAdmin)).Count > 0) return;
+        if (string.IsNullOrWhiteSpace(login) || string.IsNullOrWhiteSpace(password))
+        {
+            logger.LogWarning("Aucun SuperAdmin : définissez Bootstrap:SuperAdmin:Login et Bootstrap:SuperAdmin:Password " +
+                              "(user-secrets ou variables d'environnement) puis redémarrez l'application.");
+            return;
+        }
 
         var user = new AppUser
         {

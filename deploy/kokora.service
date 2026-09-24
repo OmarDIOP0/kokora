@@ -1,0 +1,22 @@
+# Installation sans Docker (Ubuntu/Debian) : /etc/systemd/system/kokora.service
+# Application publiée dans /opt/kokora (dotnet publish -c Release -o /opt/kokora), données dans /var/lib/kokora.
+[Unit]
+Description=Kokora (navétane de Nguékokh)
+After=network.target postgresql.service
+
+[Service]
+WorkingDirectory=/opt/kokora
+ExecStart=/usr/bin/dotnet /opt/kokora/Kokora.Web.dll
+Restart=always
+RestartSec=5
+User=kokora
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=ASPNETCORE_URLS=http://127.0.0.1:5000
+Environment=Storage__DataPath=/var/lib/kokora
+Environment=Storage__UploadsPath=/var/lib/kokora/uploads
+Environment=TZ=Africa/Dakar
+# Secrets dans un fichier lisible par root seulement : ConnectionStrings__Kokora=..., Bootstrap__SuperAdmin__...
+EnvironmentFile=/etc/kokora.env
+
+[Install]
+WantedBy=multi-user.target

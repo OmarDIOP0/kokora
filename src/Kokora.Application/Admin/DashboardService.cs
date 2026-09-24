@@ -11,7 +11,12 @@ public record DashboardData(
     IReadOnlyList<AdminMatchItem> Today,
     IReadOnlyList<AdminMatchItem> MissingResults,
     int Clubs, int Players, int MatchesPlanned, int MatchesPlayed,
-    IReadOnlyList<AuditLog> RecentChanges);
+    IReadOnlyList<AuditLog> RecentChanges,
+    VisitStats? Visits = null);
+
+/// <summary>Fréquentation : pages vues par jour et par rubrique (compteurs anonymes).</summary>
+public record VisitStats(IReadOnlyList<(DateOnly Day, int Views)> Daily, IReadOnlyList<(string Section, int Views)> BySection,
+    int Total, int Today, int AppLaunches);
 
 public record AuditFilter(string? EntityType = null, string? User = null, DateOnly? Day = null, int Page = 1, int PageSize = 50);
 
@@ -34,6 +39,18 @@ public class DashboardService(IAppDbContext db, ScheduleService schedule)
             await matches.CountAsync(ct),
             await matches.CountAsync(m => m.Status == MatchStatus.Finished || m.Status == MatchStatus.Forfeit, ct),
             recent);
+    }
+
+    public async Task<VisitStats> VisitsAsync(int days = 30, CancellationToken ct = default)
+    {
+        var from = KokoraTime.Today.AddDays(-(days - 1));
+        var rows = await db.DailyVisits.AsNoTracking().Where(v => v.Day >= from).ToListAsync(ct);
+        var pages = rows.Where(r => r.Section != "appli").ToList();
+        var daily = Enumerable.Range(0, days).Select(i => from.AddDays(i))
+            .Select(d => (d, pages.Where(r => r.Day == d).Sum(r => r.Count))).ToList();
+        var bySection = pages.GroupBy(r => r.Section).Select(g => (g.Key, g.Sum(r => r.Count))).OrderByDescending(x => x.Item2).ToList();
+        return new VisitStats(daily, bySection, pages.Sum(r => r.Count), pages.Where(r => r.Day == KokoraTime.Today).Sum(r => r.Count),
+            rows.Where(r => r.Section == "appli").Sum(r => r.Count));
     }
 
     public async Task<(List<AuditLog> Items, int Total)> AuditAsync(AuditFilter f, CancellationToken ct = default)

@@ -5,6 +5,9 @@
     ViewData["Title"] = c.Title;
     ViewData["Description"] = c.Summary ?? "Info du navétane de Nguékokh.";
     var whatsapp = "https://wa.me/?text=" + Uri.EscapeDataString($"{c.Title}\n{Model.ShareUrl}");
+    ViewData["Og"] = true;
+    ViewData["OgImage"] = c.CoverUrl is not null;
+    var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
     var compact = new ViewDataDictionary(ViewData) { ["Compact"] = true };
     var imageUrl = c.CoverUrl is null ? null : $"{Context.Request.Scheme}://{Context.Request.Host}{c.CoverUrl}";
 }
@@ -13,7 +16,7 @@
     <meta property="og:title" content="@c.Title">
     <meta property="og:description" content="@ViewData["Description"]">
     <meta property="og:url" content="@Model.ShareUrl">
-    <meta property="og:site_name" content="Kokora">
+    <!script type="application/ld+json">@Html.Raw(StructuredData.Article(a, Model.ShareUrl, baseUrl))</!script>
     @if (imageUrl is not null)
     {
         <meta property="og:image" content="@imageUrl">

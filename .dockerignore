@@ -1,0 +1,15 @@
+**/bin
+**/obj
+**/node_modules
+**/wwwroot/dist
+**/wwwroot/uploads
+**/wwwroot/_snapshots
+**/wwwroot/sw.js
+**/App_Data
+**/Icons
+.git
+.vs
+.claude
+backups
+tests
+*.md

@@ -51,6 +51,10 @@ public static class DependencyInjection
         services.AddSingleton<IPushService>(sp => sp.GetRequiredService<Push.WebPushService>());
         services.AddHostedService(sp => sp.GetRequiredService<Push.WebPushService>());
         services.AddHostedService<Push.ScheduledNewsNotifier>();
+
+        services.AddSingleton<Analytics.VisitRecorder>();
+        services.AddSingleton<IVisitCounter>(sp => sp.GetRequiredService<Analytics.VisitRecorder>());
+        services.AddHostedService(sp => sp.GetRequiredService<Analytics.VisitRecorder>());
         return services;
     }
 }

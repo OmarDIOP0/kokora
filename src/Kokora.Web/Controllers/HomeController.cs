@@ -106,6 +106,10 @@ public class HomeController(PublicContext ctx, MatchQueryService queries, Standi
         return View();
     }
 
+    /// <summary>Page affichée par le service worker quand une page jamais visitée est demandée sans réseau.</summary>
+    [HttpGet("/hors-ligne")]
+    public IActionResult Offline() => View();
+
     // Toutes méthodes : la page d'erreur est rejouée avec la méthode de la requête d'origine (ex. POST).
     [Route("/erreur")]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

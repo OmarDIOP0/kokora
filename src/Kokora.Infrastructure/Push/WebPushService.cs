@@ -38,7 +38,7 @@ public class WebPushService : BackgroundService, IPushService
         var (pub, priv) = (config["Push:PublicKey"], config["Push:PrivateKey"]);
         if (string.IsNullOrWhiteSpace(pub) || string.IsNullOrWhiteSpace(priv))
         {
-            try { (pub, priv) = LoadOrCreateKeys(Path.Combine(env.ContentRootPath, "App_Data", "vapid.json")); }
+            try { (pub, priv) = LoadOrCreateKeys(Path.Combine(config["Storage:DataPath"] is { Length: > 0 } data ? data : Path.Combine(env.ContentRootPath, "App_Data"), "vapid.json")); }
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Notifications push désactivées : impossible de créer les clés VAPID.");

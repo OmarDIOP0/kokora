@@ -22,7 +22,7 @@
 {
     <form method="post" action="/admin/saisons/choisir" class="border-b border-line p-3">
         <label for="season-switch" class="label mb-1.5 block">Saison de travail</label>
-        <select id="season-switch" name="id" class="input !min-h-10 !text-[15px]" onchange="this.form.requestSubmit()">
+        <select id="season-switch" name="id" class="input !min-h-10 !text-[15px]" data-autosubmit>
             @foreach (var s in seasons)
             {
                 <option value="@s.Id" selected="@(season?.Id == s.Id)">@(s.IsCurrent ? $"{s.Name} · en cours" : s.Name)</option>

@@ -76,6 +76,11 @@ function init(root = document) {
   });
 }
 
+// Liste qui envoie son formulaire dès qu'on change la valeur (pas de gestionnaire en ligne : politique CSP).
+document.addEventListener('change', (e) => {
+  if (e.target.matches?.('[data-autosubmit]')) e.target.form?.requestSubmit();
+});
+
 // Confirmation avant une action destructive : <form data-confirm="…"> ou <button data-confirm="…">.
 document.addEventListener('submit', (e) => {
   const form = e.target;

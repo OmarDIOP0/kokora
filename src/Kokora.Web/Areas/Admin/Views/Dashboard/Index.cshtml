@@ -1,4 +1,7 @@
 @model DashboardData
+@section Head {
+    <script type="module" src="~/dist/charts.js" asp-append-version="true"></script>
+}
 @{
     ViewData["Title"] = "Tableau de bord";
     var isAdmin = User.IsInRole(Kokora.Application.Abstractions.Roles.SuperAdmin) || User.IsInRole(Kokora.Application.Abstractions.Roles.Admin);
@@ -77,7 +80,34 @@ else
             </section>
         </div>
 
-        <section class="section self-start">
+        <div class="grid gap-3 self-start">
+        @if (Model.Visits is { } v)
+        {
+            var labels = new Dictionary<string, string>
+            {
+                ["matchs"] = "Accueil (matchs)", ["match"] = "Fiches match", ["classements"] = "Classements", ["stats"] = "Statistiques",
+                ["equipes"] = "Équipes", ["joueurs"] = "Joueurs", ["infos"] = "Infos", ["pronostics"] = "Pronostics", ["recherche"] = "Recherche", ["plus"] = "Plus"
+            };
+            var chart = System.Text.Json.JsonSerializer.Serialize(v.Daily.Select(x => new { label = x.Day.ToString("dd/MM"), v = x.Views }));
+            <section class="section">
+                <header class="section-head"><span>Fréquentation</span><span class="sub">30 derniers jours · pages vues</span></header>
+                <div class="grid grid-cols-3 border-b border-line">
+                    <div class="stat"><div class="label">Aujourd'hui</div><div class="v mt-1">@v.Today</div></div>
+                    <div class="stat border-x border-line"><div class="label">30 jours</div><div class="v mt-1">@v.Total</div></div>
+                    <div class="stat"><div class="label" title="Ouvertures depuis l'icône de l'application installée">Appli</div><div class="v mt-1">@v.AppLaunches</div></div>
+                </div>
+                @if (v.Total > 0)
+                {
+                    <div class="h-40 p-3"><canvas data-chart="visits" data-values='@Html.Raw(chart)' role="img" aria-label="Pages vues par jour"></canvas></div>
+                    @foreach (var (section, views) in v.BySection.Take(6))
+                    {
+                        <div class="row !min-h-10 text-[14px]"><span class="flex-1">@labels.GetValueOrDefault(section, section)</span><span class="num font-semibold">@views</span></div>
+                    }
+                }
+                else { <div class="empty !py-5">Les visites apparaîtront ici (comptage anonyme, sans cookie).</div> }
+            </section>
+        }
+        <section class="section">
             <header class="section-head"><span>Dernières modifications</span>
                 @if (isAdmin) { <a href="/admin/audit" class="ml-auto text-[13px] font-semibold text-brand">Journal</a> }
             </header>
@@ -95,5 +125,6 @@ else
                 </div>
             }
         </section>
+        </div>
     </div>
 }

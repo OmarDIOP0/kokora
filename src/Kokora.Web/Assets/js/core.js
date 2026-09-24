@@ -7,6 +7,7 @@ import { theme } from './lib/theme.js';
 import { tickClocks } from './lib/clock.js';
 import { pushSettings } from './lib/push.js';
 import { syncAccount } from './lib/account.js';
+import { pwa, startPwa } from './lib/pwa.js';
 
 window.htmx = htmx;
 htmx.config.defaultSwapStyle = 'innerHTML';
@@ -23,6 +24,7 @@ document.addEventListener('htmx:configRequest', (e) => {
 Alpine.store('favs', favorites);
 Alpine.store('theme', theme);
 Alpine.data('pushSettings', pushSettings);
+Alpine.store('pwa', pwa);
 window.Alpine = Alpine;
 
 // Heures relatives : <time data-rel datetime="…">
@@ -49,6 +51,12 @@ setInterval(tickClocks, 10_000);
 setInterval(refreshRelativeTimes, 30_000);
 setInterval(refreshCountdowns, 1_000);
 
+// Partage d'une carte de score en image : module chargé au premier clic seulement.
+document.addEventListener('click', (e) => {
+  const button = e.target.closest?.('[data-share-image]');
+  if (button) import('./share.js').then((m) => m.shareImage(button));
+});
+
 // Indicateur hors ligne
 function updateOnline() { document.documentElement.toggleAttribute('data-offline', !navigator.onLine); }
 window.addEventListener('online', updateOnline);
@@ -67,3 +75,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 Alpine.start();
 syncAccount(Alpine.store('favs'));
+startPwa(Alpine.store('pwa'));

@@ -491,3 +491,10 @@ src/Kokora.Web/wwwroot/_snapshots/
 
 # Clés VAPID générées en développement
 src/Kokora.Web/App_Data/
+
+# Service worker généré par Assets/build.mjs (Workbox)
+src/Kokora.Web/wwwroot/sw.js
+
+# Sauvegardes et secrets de production
+backups/
+.env

@@ -6,11 +6,22 @@ using Kokora.Infrastructure;
 using Kokora.Infrastructure.Persistence;
 using Kokora.Web.Areas.Admin;
 using Kokora.Web.Infrastructure;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Données persistantes hors base : clés de chiffrement des cookies, clés VAPID (à sauvegarder avec la base).
+var dataPath = builder.Configuration["Storage:DataPath"] is { Length: > 0 } customData
+    ? customData
+    : Path.Combine(builder.Environment.ContentRootPath, "App_Data");
+builder.Configuration["Storage:DataPath"] = dataPath;
+// Sans clés persistantes, chaque redémarrage (ou conteneur recréé) déconnecterait tout le monde.
+builder.Services.AddDataProtection()
+    .SetApplicationName("Kokora")
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataPath, "keys")));
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
@@ -20,6 +31,7 @@ builder.Services.AddScoped<AdminSeason>();
 builder.Services.AddScoped<Kokora.Web.Areas.Admin.Models.Lookups>();
 builder.Services.AddScoped<PublicContext>();
 builder.Services.AddSignalR();
+builder.Services.AddHealthChecks().AddDbContextCheck<AppDbContext>("base-de-donnees");
 builder.Services.AddSingleton<ILiveNotifier, Kokora.Web.Live.SignalRLiveNotifier>();
 
 builder.Services.AddControllersWithViews(options =>
@@ -90,6 +102,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.UseForwardedHeaders();
+app.UseSecurityHeaders(app.Environment.IsDevelopment());
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/erreur");
@@ -98,14 +111,43 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/erreur", "?code={0}");
 app.UseResponseCompression();
 app.UseHttpsRedirection();
-app.UseStaticFiles(); // fichiers téléversés (wwwroot/uploads), non connus au build
+// Fichiers statiques : les ressources versionnées (?v=…) et les images téléversées (noms uniques) sont gardées
+// longtemps par le navigateur ; le service worker et le manifeste sont toujours revalidés.
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var path = ctx.Context.Request.Path.Value ?? "";
+        var headers = ctx.Context.Response.Headers;
+        if (path is "/sw.js" or "/manifest.webmanifest")
+            headers.CacheControl = "no-cache";
+        else if (path.StartsWith("/uploads/") || (ctx.Context.Request.Query.ContainsKey("v")
+                 && (path.StartsWith("/dist/") || path.StartsWith("/fonts/") || path.StartsWith("/icons/"))))
+            headers.CacheControl = "public, max-age=31536000, immutable";
+        else if (path.StartsWith("/fonts/") || path.StartsWith("/icons/"))
+            headers.CacheControl = "public, max-age=604800";
+    }
+});
+// Téléversements rangés hors de wwwroot (Storage:UploadsPath, ex. volume Docker) : servis sous /uploads.
+if (app.Configuration["Storage:UploadsPath"] is { Length: > 0 } uploadsPath)
+{
+    Directory.CreateDirectory(uploadsPath);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+        RequestPath = "/uploads",
+        OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable"
+    });
+}
 app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseVisitCounting();
 
 app.MapStaticAssets();
 app.MapControllers();
+app.MapHealthChecks("/sante"); // supervision (disponibilité de l'application et de la base)
 app.MapHub<Kokora.Web.Live.LiveHub>(Kokora.Web.Live.LiveHub.Path);
 app.MapControllerRoute(name: "admin", pattern: "admin/{controller=Dashboard}/{action=Index}/{id?}", defaults: new { area = "Admin" })
    .WithStaticAssets();

@@ -678,6 +678,12 @@
 
 /* ---------- Direct ---------- */
 @layer components {
+  /* Nouvelle version de l'application */
+  .update-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(68px + env(safe-area-inset-bottom)); z-index: 60;
+    display: flex; align-items: center; gap: 12px; width: max-content; max-width: calc(100vw - 24px); padding: 8px 8px 8px 16px;
+    border-radius: var(--radius-md); background: #1d2320; color: #fff; font-size: 14px; box-shadow: 0 8px 24px rgb(0 0 0 / .25); }
+  @media (min-width: 768px) { .update-toast { bottom: 24px; } }
+
   /* Ligne de match mise à jour en direct : bref surlignage (but). */
   .match.is-updated { animation: goal-flash 2.4s var(--ease-snap); }
   @keyframes goal-flash {
@@ -706,6 +712,36 @@
     box-shadow: 0 -8px 32px rgb(0 0 0 / .2); }
   @media (min-width: 768px) { .field-sheet { inset: 8dvh auto auto 50%; width: 560px; transform: translateX(-50%); border-radius: var(--radius-md); max-height: 84dvh; } }
 }
+
+/* ---------- Carte de score à partager (image 1080×1080, couleurs fixes indépendantes du thème) ---------- */
+.share-card-host { position: fixed; left: -12000px; top: 0; pointer-events: none; }
+.share-card {
+  width: 1080px; height: 1080px; box-sizing: border-box; padding: 72px 64px 56px;
+  display: flex; flex-direction: column; background: #0e1210; color: #eaeeeb; font-family: var(--font-sans);
+  background-image: linear-gradient(90deg, var(--c1) 0 50%, var(--c2) 50% 100%); background-size: 100% 14px; background-repeat: no-repeat;
+}
+.share-card .sc-top { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #262d29; padding: 28px 0 24px;
+  font-family: var(--font-display); text-transform: uppercase; letter-spacing: .08em; }
+.share-card .sc-comp { font-size: 40px; font-weight: 700; }
+.share-card .sc-stage { font-size: 32px; color: #a2aba5; font-weight: 600; }
+.share-card .sc-teams { flex: 1; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 24px; }
+.share-card .sc-team { display: grid; justify-items: center; gap: 28px; text-align: center; }
+.share-card .sc-crest { width: 220px; height: 220px; border-radius: 36px; display: grid; place-items: center; overflow: hidden;
+  font-family: var(--font-display); font-weight: 700; font-size: 96px; color: #fff; box-shadow: inset 0 0 0 4px rgb(255 255 255 / .12); }
+.share-card .sc-crest img { width: 100%; height: 100%; object-fit: contain; background: #fff; }
+.share-card .sc-name { font-family: var(--font-display); font-weight: 700; font-size: 52px; line-height: 1.05; max-width: 340px; }
+.share-card .sc-score { font-family: var(--font-display); font-weight: 700; font-size: 200px; line-height: 1; display: flex; gap: 18px;
+  font-variant-numeric: tabular-nums; }
+.share-card .sc-score i { font-style: normal; color: #5b635e; }
+.share-card .sc-score .sc-time { font-size: 120px; }
+.share-card .sc-pens { text-align: center; font-size: 40px; font-weight: 600; color: #d8b86d; margin-top: -24px; }
+.share-card .sc-status { text-align: center; font-size: 36px; color: #a2aba5; margin: 24px 0 48px; text-transform: uppercase; letter-spacing: .1em;
+  font-family: var(--font-display); font-weight: 600; }
+.share-card .sc-status.is-live { color: #ff4a42; }
+.share-card .sc-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #262d29; padding-top: 28px;
+  font-size: 32px; color: #a2aba5; }
+.share-card .sc-brand { font-family: var(--font-display); font-weight: 700; font-size: 52px; color: #eaeeeb; }
+.share-card .sc-brand b { color: #3fb872; }
 
 /* ---------- Pronostics ---------- */
 @layer components {

@@ -14,6 +14,12 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="10.0.12" />
+  </ItemGroup>
+
+  <!-- Données locales (téléversements, instantanés de relecture, clés) : jamais publiées avec l'application. -->
+  <ItemGroup>
+    <Content Remove="wwwroot\_snapshots\**;wwwroot\uploads\**;App_Data\**" />
   </ItemGroup>
 
   <!-- Icônes Lucide lues par le tag helper <icon> -->

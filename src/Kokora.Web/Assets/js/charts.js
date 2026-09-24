@@ -33,16 +33,38 @@ function goalsChart(canvas) {
   });
 }
 
+/** Série simple (fréquentation de l'admin). */
+function visitsChart(canvas) {
+  const values = JSON.parse(canvas.dataset.values || '[]');
+  return new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: values.map((v) => v.label),
+      datasets: [{ label: 'Pages vues', data: values.map((v) => v.v), backgroundColor: css('--brand'), borderRadius: 2, maxBarThickness: 14 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 200 },
+      plugins: { legend: { display: false }, tooltip: { displayColors: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: css('--text-3'), maxRotation: 0, autoSkipPadding: 12, font: { family: 'Barlow', size: 11 } } },
+        y: { beginAtZero: true, ticks: { precision: 0, color: css('--text-3') }, grid: { color: css('--line') }, border: { display: false } },
+      },
+    },
+  });
+}
+
+const builders = { goals: goalsChart, visits: visitsChart };
+
 // Un graphique n'est créé qu'une fois visible : dans un onglet masqué, sa taille serait nulle.
 const charts = new Map();
 const observer = new IntersectionObserver((entries) => {
   for (const entry of entries) {
-    if (entry.isIntersecting && !charts.has(entry.target)) charts.set(entry.target, goalsChart(entry.target));
+    if (entry.isIntersecting && !charts.has(entry.target)) charts.set(entry.target, builders[entry.target.dataset.chart](entry.target));
   }
 });
 
 function start() {
-  document.querySelectorAll('canvas[data-chart="goals"]').forEach((c) => observer.observe(c));
+  document.querySelectorAll('canvas[data-chart]').forEach((c) => observer.observe(c));
 }
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
@@ -51,6 +73,6 @@ if (document.readyState === 'loading') document.addEventListener('DOMContentLoad
 new MutationObserver(() => {
   for (const [canvas, chart] of charts) {
     chart.destroy();
-    charts.set(canvas, goalsChart(canvas));
+    charts.set(canvas, builders[canvas.dataset.chart](canvas));
   }
 }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });

@@ -16,12 +16,16 @@
         PlayerPosition.Goalkeeper => "Gardiens", PlayerPosition.Defender => "Défenseurs", PlayerPosition.Midfielder => "Milieux",
         PlayerPosition.Forward => "Attaquants", _ => "Autres"
     };
+    ViewData["Og"] = true;
     var wide = new ViewDataDictionary(ViewData) { ["Wide"] = true };
     var compact = new ViewDataDictionary(ViewData) { ["Compact"] = true };
 }
 @section Head {
     <meta property="og:title" content="@t.Name · Kokora">
     <meta property="og:description" content="@ViewData["Description"]">
+    <meta property="og:type" content="profile">
+    <link rel="canonical" href="@($"{Context.Request.Scheme}://{Context.Request.Host}{t.Url}")">
+    <!script type="application/ld+json">@Html.Raw(StructuredData.TeamPage(t, Model.Neighborhood, $"{Context.Request.Scheme}://{Context.Request.Host}"))</!script>
     @if (chronological.Count > 1) { <script type="module" src="~/dist/charts.js" asp-append-version="true"></script> }
 }
 

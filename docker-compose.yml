@@ -1,0 +1,52 @@
+# Kokora en production : application + PostgreSQL + Caddy (HTTPS automatique avec Let's Encrypt).
+# 1. Copier deploy/.env.example en .env et le compléter.  2. docker compose up -d --build
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: kokora
+      POSTGRES_USER: kokora
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Définir POSTGRES_PASSWORD dans .env}
+    volumes:
+      - db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kokora -d kokora"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Kokora: "Host=db;Database=kokora;Username=kokora;Password=${POSTGRES_PASSWORD}"
+      Bootstrap__SuperAdmin__Login: ${ADMIN_LOGIN:-}
+      Bootstrap__SuperAdmin__Password: ${ADMIN_PASSWORD:-}
+      Push__Subject: "mailto:${CONTACT_EMAIL:-contact@example.com}"
+    volumes:
+      - data:/data
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on: [app]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      DOMAIN: ${DOMAIN:?Définir DOMAIN dans .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  db:
+  data:
+  caddy_data:
+  caddy_config:

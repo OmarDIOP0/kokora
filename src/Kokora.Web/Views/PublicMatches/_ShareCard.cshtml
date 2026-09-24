@@ -1,0 +1,40 @@
+@model MatchDetailVm
+@{
+    var m = Model.Match;
+    var status = m.IsLive ? $"En direct · {m.Minute}'" : m.ShowScore ? Display.StatusLabel(m.Status) : m.KickoffAt is { } k ? KokoraTime.Long(k) : "Date à fixer";
+    string Initials(TeamVm? t) => t is null ? "?" : Kokora.Domain.Clubs.ClubInitials.From(t.Name);
+}
+@* Carte de score 1080×1080 pour le partage en image (hors écran ; convertie en PNG dans le navigateur). *@
+<div class="share-card-host" aria-hidden="true">
+    <div class="share-card" id="share-card-@m.Id" style="--c1:@(m.Home?.Color ?? "#5b5f63");--c2:@(m.Away?.Color ?? "#5b5f63")">
+        <div class="sc-top">
+            <span class="sc-comp">@Model.Competition.Name</span>
+            <span class="sc-stage">@m.Stage</span>
+        </div>
+        <div class="sc-teams">
+            @foreach (var (team, placeholder, side) in new[] { (m.Home, m.HomePlaceholder, "home"), (m.Away, m.AwayPlaceholder, "away") })
+            {
+                <div class="sc-team">
+                    <div class="sc-crest" style="background:@(team?.Color ?? "#5b5f63")">
+                        @if (team?.LogoUrl is { } logo) { <img src="@logo" alt="" crossorigin="anonymous"> }
+                        else { <span>@Initials(team)</span> }
+                    </div>
+                    <div class="sc-name">@(team?.Name ?? placeholder)</div>
+                </div>
+                @if (side == "home")
+                {
+                    <div class="sc-score">
+                        @if (m.ShowScore) { <span>@m.HomeScore</span><i>-</i><span>@m.AwayScore</span> }
+                        else { <span class="sc-time">@(m.KickoffAt is { } kk ? KokoraTime.Hour(kk) : "-")</span> }
+                    </div>
+                }
+            }
+        </div>
+        @if (m.HomePenalties is not null) { <div class="sc-pens">@m.HomePenalties-@m.AwayPenalties aux tirs au but</div> }
+        <div class="sc-status @(m.IsLive ? "is-live" : "")">@status</div>
+        <div class="sc-bottom">
+            <span class="sc-brand">Koko<b>ra</b></span>
+            <span>Navétane de Nguékokh</span>
+        </div>
+    </div>
+</div>

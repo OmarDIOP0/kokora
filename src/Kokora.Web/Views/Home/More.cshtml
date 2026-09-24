@@ -23,6 +23,20 @@
         </label>
     </section>
 
+    <!-- Installer l'application -->
+    <section class="section" x-data x-show="!$store.pwa.installed && ($store.pwa.canInstall || $store.pwa.iosHint)" x-cloak>
+        <header class="section-head"><span>Application</span></header>
+        <div class="flex items-center gap-3 px-4 py-3">
+            <img src="/icons/icon-192.png" alt="" width="44" height="44" class="h-11 w-11 rounded-lg">
+            <p class="min-w-0 flex-1 text-[14px] text-ink-2">
+                <span class="block font-semibold text-ink">Installer Kokora</span>
+                <span x-show="$store.pwa.canInstall">Sur l'écran d'accueil, léger, et consultable sans réseau.</span>
+                <span x-show="$store.pwa.iosHint && !$store.pwa.canInstall">Touchez Partager puis « Sur l'écran d'accueil ».</span>
+            </p>
+            <button type="button" class="btn btn-primary btn-sm" x-show="$store.pwa.canInstall" @@click="$store.pwa.install()">Installer</button>
+        </div>
+    </section>
+
     <partial name="_PushSettings" />
 
     <section class="section">

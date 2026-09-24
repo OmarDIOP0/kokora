@@ -14,7 +14,7 @@
     <meta name="theme-color" content="#ffffff">
     <meta name="csrf-token" content="@csrf">
     <link rel="icon" href="~/favicon.svg" type="image/svg+xml">
-    <script>
+    <script nonce="@Context.Nonce()">
         (function () {
             var d = document.documentElement, t = null;
             try { t = localStorage.getItem('k-theme'); } catch (e) { }

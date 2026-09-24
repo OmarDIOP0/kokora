@@ -5,10 +5,13 @@
     ViewData["Title"] = Model.FilterLabel ?? activeCategory?.Name ?? "Infos";
     ViewData["Description"] = "Communiqués, résumés de matchs et décisions de la commission du navétane de Nguékokh.";
     var featured = Model.Featured;
+    ViewData["Og"] = true;
 }
 @section Head {
     <meta property="og:title" content="@ViewData["Title"] · Kokora">
     <meta property="og:description" content="@ViewData["Description"]">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="@($"{Context.Request.Scheme}://{Context.Request.Host}/infos")">
 }
 
 <div class="mx-auto max-w-[760px]">

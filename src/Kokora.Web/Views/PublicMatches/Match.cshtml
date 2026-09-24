@@ -8,6 +8,9 @@
     ViewData["Description"] = Model.ShareText;
     var outcome = m.Outcome;
     var hasLineups = d.HomeLineup.Count + d.AwayLineup.Count > 0;
+    ViewData["Og"] = true;
+    ViewData["OgImage"] = Model.Photos.Count > 0;
+    var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
     var whatsapp = "https://wa.me/?text=" + Uri.EscapeDataString($"{Model.ShareText}\n{Model.ShareUrl}");
 }
 @section Head {
@@ -15,8 +18,7 @@
     <meta property="og:title" content="@ViewData["Title"]">
     <meta property="og:description" content="@d.Competition.Name · @d.PhaseName@(m.KickoffAt is { } ok ? " · " + KokoraTime.Long(ok) : "")">
     <meta property="og:url" content="@Model.ShareUrl">
-    <meta property="og:site_name" content="Kokora">
-    <meta name="twitter:card" content="summary">
+    <!script type="application/ld+json">@Html.Raw(StructuredData.Match(d, Model.ShareUrl, baseUrl))</!script>
     <link rel="canonical" href="@Model.ShareUrl">
     @if (Model.Photos.Count > 0)
     {
@@ -130,7 +132,11 @@
 
         <!-- Partage -->
         <div class="flex gap-2 border-t border-line p-3" x-data="{ canShare: !!navigator.share }">
-            <a href="@whatsapp" target="_blank" rel="noopener" class="btn btn-secondary btn-sm flex-1"><icon name="share-2" />WhatsApp</a>
+            <a href="@whatsapp" target="_blank" rel="noopener" class="btn btn-secondary btn-sm flex-1"><icon name="message-circle" />WhatsApp</a>
+            <button type="button" class="btn btn-secondary btn-sm flex-1" data-share-image="share-card-@m.Id"
+                    data-file-name="@Kokora.Application.Common.Slug.From(ViewData["Title"] as string ?? "match", 60)" data-share-text="@Model.ShareUrl">
+                <icon name="image" /><span data-label>Image</span>
+            </button>
             <button type="button" class="btn btn-secondary btn-sm flex-1" x-show="canShare" x-cloak
                     @@click="navigator.share({ title: document.title, text: '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(Model.ShareText))', url: '@Model.ShareUrl' }).catch(() => {})">
                 <icon name="share-2" />Partager
@@ -149,3 +155,5 @@
         </section>
     }
 </div>
+
+<partial name="_ShareCard" model="d" />

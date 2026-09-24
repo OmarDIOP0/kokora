@@ -2,8 +2,8 @@
 
 Résultats, classements, buteurs et matchs en direct du navétane de Nguékokh (zonales 5A et 5B, 4 Grandes, Coupe du Maire).
 
-> Projet en cours : phases 1 (architecture, design system), 2 (administration), 3 (partie publique) et 4 (statistiques, équipes, joueurs) terminées.
-> Ce README sera complété au fil des phases (déploiement, sauvegardes, Docker).
+Application web installable sur téléphone (PWA), pensée pour la 3G : administration de la saison, saisie en direct depuis le bord du terrain,
+infos, comptes des supporters (pronostics, homme du match, notifications). Mise en ligne : voir [Mise en ligne](#mise-en-ligne).
 
 ## Pile technique
 
@@ -14,6 +14,9 @@ Résultats, classements, buteurs et matchs en direct du navétane de Nguékokh (
 | Comptes | ASP.NET Core Identity (rôles `SuperAdmin`, `Admin`, `Rédacteur`, `Utilisateur`) |
 | Front | Tailwind CSS v4 (CLI), esbuild, htmx, Alpine.js, Day.js, icônes Lucide rendues côté serveur |
 | Polices | Barlow Condensed (scores, titres) + Barlow (texte), auto-hébergées |
+| Temps réel | SignalR (WebSockets, repli automatique) |
+| Hors ligne | Service worker Workbox, manifeste d'application, Web Push (VAPID) |
+| Bibliothèques | Quill (éditeur), Chart.js, Tom Select, Flatpickr, SortableJS, Notyf, GLightbox, html-to-image |
 
 ```
 src/
@@ -22,8 +25,11 @@ src/
   Kokora.Infrastructure/  EF Core, migrations, Identity, audit
   Kokora.Web/             contrôleurs, vues, tag helpers, Assets/ (CSS/JS sources)
 tests/
-  Kokora.Domain.Tests/
+  Kokora.Domain.Tests/        règles pures (classements, suspensions, calendrier, direct)
   Kokora.Application.Tests/
+  Kokora.Web.Tests/           application complète sur PostgreSQL
+deploy/                       Caddyfile, sauvegarde/restauration, service systemd, nginx
+Dockerfile, docker-compose.yml
 ```
 
 ## Prérequis
@@ -148,6 +154,96 @@ Standard Web Push (Chrome, Firefox, Edge ; Safari sur iPhone une fois Kokora ajo
 - `/recherche` : recherche instantanée d'équipes et de joueurs, insensible aux accents.
 - Le choix de compétition est mémorisé (cookie `k-comp`). Classements mis en cache mémoire, invalidés à chaque résultat.
 
+## Application, partage, référencement
+
+- **Installable** (Android : bouton « Installer » dans la page Plus ; iPhone : Partager → « Sur l'écran d'accueil »). Icônes, raccourcis (Matchs, Classements, Infos).
+- **Hors ligne et 3G** : les pages déjà consultées restent disponibles sans réseau ; au-delà de 4 s d'attente, la dernière version s'affiche. CSS, JS, polices et icônes sont mis en cache à l'installation (≈ 420 Ko) ; photos en cache limité. Admin, compte et temps réel ne sont jamais mis en cache. Une nouvelle version s'annonce par « Recharger ».
+- **Poids d'une première visite** : ≈ 13 Ko de CSS et 46 Ko de JS compressés, plus les polices ; le reste (temps réel, graphiques, visionneuse, éditeur) n'est chargé que sur les pages qui l'utilisent. Fichiers versionnés gardés un an par le navigateur.
+- **Partage en image** : bouton « Image » sur la fiche d'un match : carte de score 1080×1080 (partage direct vers WhatsApp sur téléphone, téléchargement sur ordinateur).
+- **Référencement** : `robots.txt`, `sitemap.xml` (équipes, joueurs, matchs de la saison, infos publiées), données structurées schema.org (match, info, équipe), aperçus Open Graph (image par défaut, couverture des infos, photos des matchs).
+
+## Sécurité
+
+- En-têtes sur toutes les réponses : politique CSP stricte (scripts du site uniquement, jeton par requête pour les rares scripts en ligne, aucune intégration en cadre), `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` ; HSTS et passage forcé en HTTPS en production.
+- Anti-CSRF sur tous les formulaires et appels (htmx, mode terrain) ; HTML des infos nettoyé par liste blanche ; images décodées et ré-encodées (un faux fichier image est refusé).
+- Mots de passe : 8 caractères avec un chiffre ; blocage 15 min après 5 échecs ; limites par adresse IP (connexion, inscription).
+- Secrets hors du code (user secrets en développement, variables d'environnement / fichier `.env` en production). Clés de chiffrement des cookies conservées dans `Storage:DataPath/keys` (sessions maintenues après un redémarrage).
+- Journal d'audit de toutes les modifications de l'admin.
+
+## Fréquentation
+
+Tableau de bord de l'admin : pages vues des 30 derniers jours, par jour et par rubrique, et ouvertures depuis l'application installée.
+Comptage **anonyme** : ni cookie, ni adresse IP, ni identifiant ; seulement des totaux par jour. Robots, aperçus de liens et préchargements ne sont pas comptés.
+
+## Mise en ligne
+
+### Hébergement conseillé
+
+- **Un petit serveur virtuel (VPS) Linux** suffit pour tout le navétane : 2 vCPU, 2 à 4 Go de RAM, 40 Go de disque (Ubuntu 24.04). Les offres d'entrée de gamme des hébergeurs européens (Hetzner, OVHcloud, Scaleway…) coûtent quelques euros par mois ; depuis Dakar, les centres de données de France ou d'Allemagne répondent en 80 à 120 ms environ, ce qui est très correct. Un hébergeur installé au Sénégal donne une latence plus faible mais coûte en général plus cher : comparez selon votre budget.
+- **Nom de domaine** : un `.sn` (NIC Sénégal) ou un `.com`.
+- **Facultatif, recommandé** : Cloudflare (offre gratuite) devant le serveur. Point de présence à Dakar, mise en cache des fichiers statiques, protection contre les attaques ; les WebSockets du direct passent sans réglage (mode SSL « Full (strict) »).
+- Évitez les hébergements mutualisés « PHP » : l'application a besoin de .NET, de PostgreSQL et des WebSockets.
+
+### Avec Docker (recommandé)
+
+Sur le serveur (Docker et le plugin Compose installés), les enregistrements DNS du domaine pointant vers son adresse IP :
+
+```bash
+git clone <dépôt> kokora && cd kokora
+cp deploy/.env.example .env
+nano .env        # domaine, mot de passe PostgreSQL, premier super admin, e-mail de contact
+docker compose up -d --build
+```
+
+- Trois services : `db` (PostgreSQL 18), `app` (Kokora, port interne 8080), `caddy` (HTTPS automatique Let's Encrypt, ports 80/443).
+- Données persistantes dans des volumes : `db` (base) et `data` (photos et logos, clés de chiffrement, clés VAPID des notifications).
+- Migrations appliquées automatiquement au démarrage. Le premier super admin est créé si aucun n'existe : retirez ensuite `ADMIN_PASSWORD` du fichier `.env`.
+- Mise à jour : `git pull && docker compose up -d --build` (quelques secondes d'interruption).
+- Journaux : `docker compose logs -f app`. Supervision : `https://votre-domaine/sante` répond `Healthy` si l'application et la base fonctionnent (à brancher sur un service gratuit comme UptimeRobot).
+
+### Sans Docker
+
+1. Installer .NET 10 (runtime ASP.NET Core), PostgreSQL et nginx ; créer la base et un utilisateur `kokora`.
+2. Publier : `dotnet publish src/Kokora.Web -c Release -o /opt/kokora` (Node.js requis sur la machine qui publie).
+3. Secrets dans `/etc/kokora.env` (lisible par root seulement) : `ConnectionStrings__Kokora=...`, `Bootstrap__SuperAdmin__Login=...`, `Bootstrap__SuperAdmin__Password=...`.
+4. Service : copier `deploy/kokora.service` dans `/etc/systemd/system/`, puis `systemctl enable --now kokora`.
+5. nginx : `deploy/nginx-kokora.conf` (WebSockets et taille d'envoi des photos déjà réglés), puis `certbot --nginx` pour le HTTPS.
+
+### Configuration
+
+| Clé (variable d'environnement : `__` au lieu de `:`) | Rôle |
+|---|---|
+| `ConnectionStrings:Kokora` | Base PostgreSQL |
+| `Bootstrap:SuperAdmin:Login` / `Password` | Premier super admin (créé au démarrage s'il n'en existe aucun) |
+| `Storage:DataPath` | Données locales : clés de chiffrement, clés VAPID (défaut : `App_Data`) |
+| `Storage:UploadsPath` | Photos et logos (défaut : `wwwroot/uploads`) |
+| `Push:PublicKey` / `PrivateKey` / `Subject` | Clés des notifications (générées automatiquement si absentes) |
+
+### Sauvegardes
+
+À mettre en place **avant** le début de la saison :
+
+```bash
+chmod +x deploy/backup.sh deploy/restore.sh
+crontab -e
+# chaque nuit à 3 h 30 :
+30 3 * * * /home/kokora/kokora/deploy/backup.sh >> /var/log/kokora-backup.log 2>&1
+```
+
+- `deploy/backup.sh` : export de la base (`pg_dump`, format compressé) et archive du volume `data` (photos, logos, clés), conservés `BACKUP_KEEP_DAYS` jours (14 par défaut) dans `backups/`.
+- **Copie hors du serveur** (indispensable : un serveur peut disparaître avec ses disques) : installer [rclone](https://rclone.org), configurer un stockage (Google Drive, Backblaze B2, un autre serveur…) et renseigner `RCLONE_REMOTE` dans `.env`.
+- Restauration : `./deploy/restore.sh backups/kokora-AAAA-MM-JJ_HHMM.dump backups/fichiers-AAAA-MM-JJ_HHMM.tar.gz`. Testez-la une fois sur un serveur de test en début de saison.
+- Sans Docker : `pg_dump -Fc kokora > kokora.dump` et une archive de `/var/lib/kokora`.
+
+### Avant l'ouverture au public
+
+- [ ] HTTPS actif, redirection de `www`
+- [ ] Super admin créé, mot de passe de démarrage retiré de `.env`
+- [ ] Données de démo supprimées (Admin → Données de démo)
+- [ ] Sauvegarde nocturne en place, **restauration testée**, copie hors serveur
+- [ ] Supervision de `/sante`
+- [ ] Notification de test envoyée depuis Admin → Notifications sur un téléphone Android
+
 ## Développement
 
 - Front en mode surveillance (deux terminaux) : `npm run watch:css` et `npm run watch:js` dans `src/Kokora.Web`.
@@ -165,13 +261,13 @@ Standard Web Push (Chrome, Firefox, Edge ; Safari sur iPhone une fois Kokora ajo
 
 ## Règles par défaut
 
-Suspensions automatiques : chaque suspension se purge sur les matchs suivants de l'équipe (un forfait compte comme un match joué). Les deux jaunes d'une exclusion ne s'ajoutent pas au cumul ; le compteur de jaunes repart à zéro après une suspension.
- (modifiables par compétition dans l'admin)
+Modifiables par compétition dans l'admin.
 
 - Victoire 3 pts, nul 1, défaite 0 ; forfait : défaite 0 pt et score de 3-0 pour l'adversaire.
 - Départage : points, différence de buts, buts marqués, confrontation directe, fair-play.
 - Suspensions : 3 cartons jaunes = 1 match ; 2e jaune = 1 match ; rouge direct = 1 match.
-- Mi-temps de 45 min ; élimination directe : tirs au but directement (prolongations désactivables).
+- Mi-temps de 45 min ; élimination directe : tirs au but directement (prolongations activables par phase).
+- Suspensions automatiques : chaque suspension se purge sur les matchs suivants de l'équipe (un forfait compte comme un match joué). Les deux jaunes d'une exclusion ne s'ajoutent pas au cumul ; le compteur de jaunes repart à zéro après une suspension.
 
 ## Licences
 

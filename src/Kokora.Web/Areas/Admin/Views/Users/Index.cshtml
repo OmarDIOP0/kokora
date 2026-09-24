@@ -25,7 +25,7 @@
 <section class="section">
     <form method="get" class="flex flex-wrap gap-2 p-3">
         <input type="search" name="q" value="@Model.Search" class="input min-w-0 flex-1" placeholder="Nom, e-mail ou téléphone" aria-label="Rechercher">
-        <select name="role" class="input !w-auto" aria-label="Rôle" onchange="this.form.submit()">
+        <select name="role" class="input !w-auto" aria-label="Rôle" data-autosubmit>
             <option value="">Tous les rôles</option>
             @foreach (var r in Kokora.Application.Abstractions.Roles.All)
             {
@@ -50,7 +50,7 @@
                 @if (u.Id != me)
                 {
                     <form method="post" action="/admin/utilisateurs/@u.Id/role" class="flex items-center gap-1">
-                        <select name="role" class="input !min-h-9 !w-auto !py-0 !text-[14px]" aria-label="Rôle de @u.DisplayName" onchange="this.form.requestSubmit()">
+                        <select name="role" class="input !min-h-9 !w-auto !py-0 !text-[14px]" aria-label="Rôle de @u.DisplayName" data-autosubmit>
                             @foreach (var r in Model.Roles)
                             {
                                 <option value="@r.Value" selected="@(r.Value == u.Role)">@r.Text</option>

@@ -12,7 +12,7 @@ public class DashboardController(DashboardService dashboard) : AdminController
     public async Task<IActionResult> Index(CancellationToken ct)
     {
         ViewData["AdminNav"] = "dashboard";
-        return View(await dashboard.GetAsync(ct));
+        return View(await dashboard.GetAsync(ct) with { Visits = await dashboard.VisitsAsync(30, ct) });
     }
 
     [HttpGet("audit")]

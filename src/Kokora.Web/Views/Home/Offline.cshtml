@@ -1,0 +1,15 @@
+@{
+    ViewData["Title"] = "Hors ligne";
+}
+<section class="section mx-auto max-w-[560px] md:mt-6" x-data>
+    <div class="empty">
+        <icon name="wifi-off" class="mx-auto mb-3 !h-10 !w-10 text-ink-3" />
+        <strong>Pas de connexion</strong>
+        Cette page n'a pas encore été consultée sur ce téléphone. Les pages déjà ouvertes (matchs, classements, équipes) restent disponibles hors ligne.
+        <div class="mt-5 flex flex-wrap justify-center gap-2">
+            <button type="button" class="btn btn-primary btn-sm" @@click="location.reload()">Réessayer</button>
+            <a href="/" class="btn btn-secondary btn-sm">Matchs</a>
+            <a href="/classements" class="btn btn-secondary btn-sm">Classements</a>
+        </div>
+    </div>
+</section>

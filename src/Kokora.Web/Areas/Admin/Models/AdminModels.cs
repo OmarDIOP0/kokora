@@ -138,6 +138,8 @@ public class PhasePageVm
     public KnockoutInput Knockout { get; init; } = new();
     public IReadOnlyList<AdminMatchItem> BracketMatches { get; init; } = [];
     public Dictionary<int, int> MatchCountByGroup { get; init; } = [];
+    public IReadOnlyList<QualificationSlotVm> Slots { get; init; } = [];
+    public IReadOnlyList<SourceOption> Sources { get; init; } = [];
 }
 
 public class ClubFormVm

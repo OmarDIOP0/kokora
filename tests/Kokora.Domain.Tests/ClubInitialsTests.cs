@@ -7,6 +7,8 @@ public class ClubInitialsTests
 {
     [Theory]
     [InlineData("ASC Démo 1", "D1")]
+    [InlineData("ASC Démo 12", "D12")]
+    [InlineData("Guinaw Rails 2", "GR2")]
     [InlineData("ASC Jeanne d'Arc", "JA")]
     [InlineData("Espoir", "ESP")]
     [InlineData("ASC Union Sportive de la Médina", "USM")]

@@ -1,0 +1,69 @@
+@model BracketVm
+@{
+    async Task Slot(MatchRowVm m, bool home)
+    {
+        var team = home ? m.Home : m.Away;
+        var score = home ? m.HomeScore : m.AwayScore;
+        var pens = home ? m.HomePenalties : m.AwayPenalties;
+        var outcome = m.Outcome;
+        var cls = outcome == 0 ? "" : (outcome == 1) == home ? "is-winner" : "is-loser";
+        <div class="slot @cls">
+            @if (team is not null)
+            {
+                <crest team="team" />
+                <span class="truncate">@team.ShortName</span>
+            }
+            else
+            {
+                <span class="crest">?</span>
+                <span class="truncate text-ink-3">@(home ? m.HomePlaceholder : m.AwayPlaceholder)</span>
+            }
+            @if (m.ShowScore)
+            {
+                <span class="score @(m.IsLive ? "text-live" : "")">@score@if (pens is not null) {<sup class="ml-0.5 text-[10px] font-sans font-semibold text-ink-3">@pens</sup>}</span>
+            }
+        </div>
+    }
+}
+@if (!Model.Rounds.Any())
+{
+    <div class="empty">Le tableau n'est pas encore établi.</div>
+}
+else
+{
+    <div class="bracket" role="list" aria-label="Tableau à élimination directe">
+        @foreach (var r in Model.MainRounds)
+        {
+            <div class="bracket-round" role="listitem">
+                <p class="label">@r.Name</p>
+                @foreach (var m in r.Matches)
+                {
+                    <a href="@m.Url" class="bracket-match block hover:border-line-strong" aria-label="@(m.Home?.Name ?? m.HomePlaceholder) contre @(m.Away?.Name ?? m.AwayPlaceholder)">
+                        @{ await Slot(m, true); await Slot(m, false); }
+                        @if (!m.ShowScore && m.KickoffAt is { } k)
+                        {
+                            <div class="border-t border-line px-2.5 py-1 text-[11.5px] text-ink-3">@KokoraTime.ToLocal(k).ToString("ddd d MMM", KokoraTime.Fr) · @KokoraTime.Hour(k)</div>
+                        }
+                        else if (m.IsLive)
+                        {
+                            <div class="flex items-center gap-1.5 border-t border-line px-2.5 py-1 text-[11.5px] font-semibold text-live"><span class="live-dot"></span>@(m.Minute ?? "En direct")</div>
+                        }
+                    </a>
+                }
+            </div>
+        }
+    </div>
+    @if (Model.ThirdPlace is { } third && third.Matches.Count > 0)
+    {
+        <div class="border-t border-line px-4 py-3">
+            <p class="label mb-2">@third.Name</p>
+            <a href="@third.Matches[0].Url" class="bracket-match block max-w-[240px]">
+                @{ await Slot(third.Matches[0], true); await Slot(third.Matches[0], false); }
+            </a>
+        </div>
+    }
+    @if (Model.Rounds.SelectMany(r => r.Matches).Any(m => m.HomePenalties is not null))
+    {
+        <p class="border-t border-line px-4 py-2.5 text-[12.5px] text-ink-3">Chiffre en exposant : tirs au but.</p>
+    }
+}

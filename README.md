@@ -2,7 +2,7 @@
 
 Résultats, classements, buteurs et matchs en direct du navétane de Nguékokh (zonales 5A et 5B, 4 Grandes, Coupe du Maire).
 
-> Projet en cours : phases 1 (architecture, design system) et 2 (administration) terminées.
+> Projet en cours : phases 1 (architecture, design system), 2 (administration) et 3 (partie publique) terminées.
 > Ce README sera complété au fil des phases (déploiement, sauvegardes, Docker).
 
 ## Pile technique
@@ -90,11 +90,20 @@ Parcours type d'une saison :
 3. **Joueurs** : un par un, ou import d'un fichier Excel/CSV (modèle téléchargeable sur la page d'import).
 4. Dans chaque zonale, **Phase de poules** → créer les poules (4 ou 5 équipes), puis « Calendrier » pour générer toutes les rencontres (aller simple ou aller-retour ; avec 5 équipes, une équipe est exempte à chaque journée).
 5. **Phase finale / 4 Grandes / Coupe** : « Créer le tableau » (2 à 32 équipes) ; les tours sont reliés, chaque vainqueur passe automatiquement au tour suivant.
-6. **Calendrier** : ajuster dates, stades et arbitres ; reporter un match en un clic.
+6. **Calendrier** : ajuster dates, stades et arbitres ; reporter un match en un clic ; cocher « Match à l'affiche » pour le compte à rebours de l'accueil.
+7. **Résultat** (depuis le calendrier ou le tableau de bord « Résultats à saisir ») : score, mi-temps, tirs au but, forfait (score administratif automatique), buteurs, passeurs et cartons. Les classements sont recalculés aussitôt et le vainqueur d'un match à élimination passe au tour suivant.
+8. **Qualification** (page d'une phase à élimination) : pour chaque place du premier tour, choisir « 1er de la Poule A », « Vainqueur Demi-finales 2 »… puis « Générer la qualification ». Une équipe choisie à la main sur un match reste prioritaire.
 
 Toutes les modifications sont tracées dans le **journal d'audit** (qui, quand, valeurs avant/après).
 
 **Données de démonstration** : `/admin/demo` crée 17 ASC fictives (« ASC Démo 1 »…), leurs joueurs et deux zonales avec des résultats simulés. Un bouton les supprime toutes sans toucher aux vraies données. Disponible tant qu'aucune vraie saison n'existe pour l'année en cours.
+
+## Partie publique
+
+- `/` : matchs par jour (bande de dates), à venir, résultats ; bloc « En direct » rafraîchi toutes les 30 s ; équipes suivies en premier.
+- `/matchs/{id}-{equipes}` : fiche match (chronologie, compositions, stats, confrontations), partage WhatsApp, aperçu Open Graph.
+- `/classements/{competition}` : tableaux par poule (forme, zones qualificatives, pénalités) et tableau final.
+- Le choix de compétition est mémorisé (cookie `k-comp`). Classements mis en cache mémoire, invalidés à chaque résultat.
 
 ## Développement
 

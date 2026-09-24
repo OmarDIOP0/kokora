@@ -1,0 +1,23 @@
+@model MatchListVm
+@foreach (var (day, groups) in Model.Days)
+{
+    <h2 class="label !text-ink-2 px-4 pb-2 pt-4 md:px-0">@KokoraTime.DayRelative(day)</h2>
+    @foreach (var g in groups)
+    {
+        <partial name="Components/_MatchGroup" model="g" view-data='new ViewDataDictionary(ViewData) { ["Wide"] = true }' />
+    }
+}
+@if (Model.HasMore)
+{
+    @* Défilement infini : remplacé par la page suivante dès qu'il devient visible. *@
+    <div hx-get="@Model.NextUrl" hx-trigger="revealed" hx-swap="outerHTML" class="section mt-3" aria-busy="true" aria-label="Chargement">
+        @for (var i = 0; i < 3; i++)
+        {
+            <div class="match">
+                <span class="skeleton h-3.5 w-9"></span>
+                <div class="grid gap-2"><span class="skeleton h-3.5 w-40"></span><span class="skeleton h-3.5 w-32"></span></div>
+                <div class="grid gap-2"><span class="skeleton h-3.5 w-3"></span><span class="skeleton h-3.5 w-3"></span></div>
+            </div>
+        }
+    </div>
+}

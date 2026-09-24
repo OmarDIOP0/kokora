@@ -316,8 +316,12 @@
   .standings .team { text-align: left; width: 100%; min-width: 160px; }
   .standings .team a { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .standings .team a > span:last-child { overflow: hidden; text-overflow: ellipsis; }
-  /* Variante compacte (colonne latérale) : le nom est tronqué pour tenir dans la largeur */
-  .standings.compact .team { min-width: 0; max-width: 0; }
+  /* Variante compacte (colonne latérale, accueil mobile) : largeurs fixes, le nom est tronqué */
+  .standings.compact { table-layout: fixed; }
+  .standings.compact th:not(.team):not(.pos) { width: 46px; }
+  .standings.compact .pos, .standings.compact .team { position: static; }
+  .standings.compact .team { width: auto; min-width: 0; max-width: none; }
+  .standings.compact .team::after { display: none; }
   .standings .pts { font-weight: 700; font-family: var(--font-display); font-size: 16px; }
   .standings tr.is-fav td { background: color-mix(in srgb, var(--brand) 7%, transparent); }
   /* Colonne équipe collante sur mobile */
@@ -483,7 +487,7 @@
     transition: background-color .15s var(--ease-snap), color .15s var(--ease-snap);
   }
   .chip:hover { color: var(--text); }
-  .chip[aria-pressed="true"], .chip.is-active { background: var(--text); color: var(--bg); box-shadow: none; }
+  .chip[aria-pressed="true"], .chip[aria-current="true"], .chip.is-active { background: var(--text); color: var(--bg); box-shadow: none; }
   .chip .dot { width: 8px; height: 8px; border-radius: 2px; background: var(--comp, var(--brand)); }
   .comp-swatch { width: 12px; height: 12px; border-radius: 3px; flex: none; background: var(--comp, var(--brand)); }
   /* Les couleurs de compétition (souvent foncées) sont éclaircies en mode sombre pour rester visibles. */

@@ -37,6 +37,8 @@ public static class ClubInitials
         if (words.Count == 0) words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
         if (words.Count == 0) return "?";
         if (words.Count == 1) return words[0][..Math.Min(3, words[0].Length)].ToUpperInvariant();
-        return string.Concat(words.Take(3).Select(w => char.ToUpperInvariant(w[0])));
+        // Un nombre est gardé en entier (« Démo 12 » → « D12 », pas « D1 »), dans la limite de 3 caractères.
+        var initials = string.Concat(words.Select(w => w.All(char.IsDigit) ? w : char.ToUpperInvariant(w[0]).ToString()));
+        return initials[..Math.Min(3, initials.Length)];
     }
 }

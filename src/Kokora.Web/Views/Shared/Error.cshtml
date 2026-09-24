@@ -1,14 +1,19 @@
 @{
-    ViewData["Title"] = "Erreur";
+    var code = ViewData["Code"] as int?;
+    var notFound = code == 404;
+    ViewData["Title"] = notFound ? "Page introuvable" : "Erreur";
 }
-<section class="section">
+<section class="section mx-auto max-w-[560px] md:mt-6">
     <div class="px-4 py-10 text-center">
-        <p class="font-display text-2xl font-bold">Une erreur est survenue</p>
-        <p class="mt-1 text-ink-2">Réessayez dans un instant. Si le problème persiste, contactez l'organisation.</p>
-        @if (ViewData["RequestId"] is string id)
+        <p class="font-display text-2xl font-bold">@(notFound ? "Page introuvable" : "Une erreur est survenue")</p>
+        <p class="mt-1 text-ink-2">
+            @(notFound ? "Ce lien n'existe pas ou plus. Le match a peut-être été supprimé ou reprogrammé."
+                       : "Réessayez dans un instant. Si le problème persiste, contactez l'organisation.")
+        </p>
+        @if (!notFound && ViewData["RequestId"] is string id)
         {
             <p class="mt-4 text-xs text-ink-3">Référence : <code>@id</code></p>
         }
-        <a href="/" class="btn btn-secondary mt-6">Retour à l'accueil</a>
+        <a href="/" class="btn btn-secondary mt-6">Retour aux matchs</a>
     </div>
 </section>

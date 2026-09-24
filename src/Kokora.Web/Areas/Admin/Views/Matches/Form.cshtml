@@ -20,7 +20,13 @@
     </div>
     @if (i.Id != 0)
     {
-        <span class="badge @Display.StatusBadge(Model.Status)">@Display.StatusLabel(Model.Status)</span>
+        <div class="flex items-center gap-2">
+            <span class="badge @Display.StatusBadge(Model.Status)">@Display.StatusLabel(Model.Status)</span>
+            @if (i.HomeClubId is not null && i.AwayClubId is not null)
+            {
+                <a href="/admin/matchs/@i.Id/resultat" class="btn btn-primary btn-sm"><icon name="check" />Saisir le résultat</a>
+            }
+        </div>
     }
 </div>
 
@@ -42,7 +48,7 @@ else
         <div asp-validation-summary="ModelOnly" class="error-summary mb-3"></div>
         @if (played)
         {
-            <p class="notice mb-3 !rounded-md"><icon name="circle-alert" />Ce match a déjà un résultat : modifiez ici la programmation seulement.</p>
+            <p class="notice mb-3 !rounded-md"><icon name="circle-alert" /><span>Ce match a déjà un résultat. Cette page modifie la programmation ; le score se corrige dans <a href="/admin/matchs/@i.Id/resultat">Résultat</a>.</span></p>
         }
 
         <section class="section">

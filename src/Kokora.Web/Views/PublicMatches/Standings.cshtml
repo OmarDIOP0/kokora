@@ -1,0 +1,65 @@
+@model StandingsPageVm
+@{
+    var c = Model.Competition;
+    ViewData["Title"] = $"Classement {c.Name}";
+    ViewData["Description"] = $"Classement et tableau de la {c.Name}, navétane de Nguékokh.";
+    var favs = Model.Ctx.Favorites;
+}
+@section SubHeader {
+    <div class="border-b border-line bg-surface">
+        <div class="mx-auto max-w-[1280px] md:px-2">
+            <partial name="Components/_CompetitionBar" view-data='new ViewDataDictionary(ViewData) { ["Ctx"] = Model.Ctx, ["Base"] = "/classements/{slug}", ["AllowAll"] = false }' />
+        </div>
+    </div>
+}
+
+<div class="mx-auto max-w-[920px]">
+    <div class="page-head !pb-3" style="--comp:@c.Color">
+        <div>
+            <p class="label">@Model.Ctx.Season?.Name</p>
+            <h1 class="flex items-center gap-2 text-[28px]"><span class="comp-swatch !h-4 !w-4"></span>@c.Name</h1>
+        </div>
+        @if (Model.Phases.Count > 1)
+        {
+            <nav class="segmented" aria-label="Phase">
+                @foreach (var p in Model.Phases)
+                {
+                    var on = p.PhaseId == Model.Current?.PhaseId;
+                    <a href="/classements/@c.Slug?phase=@p.PhaseId" class="@(on ? "is-active" : "")" aria-current="@(on ? "page" : null)">@p.Name</a>
+                }
+            </nav>
+        }
+    </div>
+
+    @if (Model.Current is null)
+    {
+        <section class="section"><div class="empty"><strong>Pas encore de classement</strong>Les phases de cette compétition ne sont pas encore définies.</div></section>
+    }
+    else if (Model.Current.Type == PhaseType.League)
+    {
+        @if (Model.Current.Groups.Count == 0)
+        {
+            <section class="section"><div class="empty"><strong>Poules à venir</strong>La composition des poules n'est pas encore publiée.</div></section>
+        }
+        @foreach (var g in Model.Current.Groups)
+        {
+            <section class="section" style="--comp:@c.Color" id="poule-@g.GroupId">
+                <header class="section-head" data-accent>
+                    <span>@g.Name</span>
+                    <span class="sub">@g.PlayedMatches / @g.TotalMatches matchs joués</span>
+                </header>
+                <partial name="Components/_StandingsTable" model="g.Table with { Favorites = favs }" />
+            </section>
+        }
+        <p class="px-4 py-4 text-[12.5px] text-ink-3 md:px-0">
+            MJ : matchs joués · G/N/P : gagnés, nuls, perdus · BP/BC : buts pour/contre · Forme : 5 derniers matchs (V, N, D).
+        </p>
+    }
+    else if (Model.Current.Bracket is { } bracket)
+    {
+        <section class="section" style="--comp:@c.Color">
+            <header class="section-head" data-accent><span>@Model.Current.Name</span><span class="sub">faites défiler horizontalement</span></header>
+            <partial name="Components/_Bracket" model="bracket" />
+        </section>
+    }
+</div>

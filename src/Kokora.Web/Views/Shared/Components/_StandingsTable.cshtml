@@ -26,7 +26,7 @@
         <tbody>
             @foreach (var r in Model.Rows)
             {
-                <tr data-zone="@r.Zone" data-team="@r.Team.Id">
+                <tr data-zone="@r.Zone" data-team="@r.Team.Id" class="@(Model.Favorites.Contains(r.Team.Id) ? "is-fav" : null)">
                     <td class="pos">@r.Rank</td>
                     <td class="team">
                         <a href="/equipes/@r.Team.Slug"><crest team="r.Team" /><span class="truncate">@r.Team.Name</span></a>
@@ -41,7 +41,7 @@
                         <td class="max-sm:hidden">@r.GoalsAgainst</td>
                     }
                     <td class="text-ink-2">@Display.Signed(r.GoalDifference)</td>
-                    <td class="pts">@r.Points</td>
+                    <td class="pts">@r.Points@if (r.Adjustment != 0) {<sup class="text-loss" title="Pénalité ou bonus de points : @Display.Signed(r.Adjustment)">*</sup>}</td>
                     @if (!Model.Compact)
                     {
                         <td class="!pr-4">
@@ -58,13 +58,17 @@
         </tbody>
     </table>
 </div>
-@if (Model.Legend.Count > 0)
+@if (Model.Legend.Count > 0 || Model.Rows.Any(r => r.Adjustment != 0))
 {
     <ul class="flex flex-wrap gap-x-4 gap-y-1 border-t border-line px-4 py-2.5 text-[12.5px] text-ink-2">
         @foreach (var (zone, text) in Model.Legend)
         {
             var color = zone switch { 'q' => "var(--zone-q)", 'p' => "var(--zone-p)", _ => "var(--zone-e)" };
             <li class="flex items-center gap-1.5"><span class="inline-block h-2.5 w-[3px] rounded-sm" style="background:@color"></span>@text</li>
+        }
+        @foreach (var r in Model.Rows.Where(r => r.Adjustment != 0))
+        {
+            <li><span class="text-loss">*</span> @r.Team.ShortName : @Display.Signed(r.Adjustment) pt@(Math.Abs(r.Adjustment) > 1 ? "s" : "") (décision de la commission)</li>
         }
     </ul>
 }

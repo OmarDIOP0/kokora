@@ -11,7 +11,7 @@ namespace Kokora.Web.Areas.Admin.Controllers;
 [Route("admin")]
 [Microsoft.AspNetCore.Authorization.Authorize(Roles = Kokora.Application.Abstractions.Roles.AdminOrAbove)]
 public class CompetitionsController(CompetitionAdminService competitions, SeasonAdminService seasons,
-    ScheduleService schedule, Lookups lookups, IAppDbContext db) : AdminController
+    ScheduleService schedule, QualificationService qualifications, Lookups lookups, IAppDbContext db) : AdminController
 {
     public override void OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext context)
     {
@@ -188,6 +188,32 @@ public class CompetitionsController(CompetitionAdminService competitions, Season
         return Redirect($"/admin/phases/{id}");
     }
 
+    // ------------------------------------------------------------ Qualifications
+
+    /// <summary>Sources des places du premier tour : clés « {matchId}:{Home|Away} » → « g12:1 », « w45 », « l45 » ou vide.</summary>
+    [HttpPost("phases/{id:int}/qualifications")]
+    public async Task<IActionResult> SaveQualifications(int id, Dictionary<string, string?> sources, CancellationToken ct)
+    {
+        foreach (var (key, value) in sources)
+        {
+            if (key.Split(':') is not [var matchText, var slotText] || !int.TryParse(matchText, out var matchId)
+                || !Enum.TryParse<Kokora.Domain.Enums.MatchSlot>(slotText, out var slot)) continue;
+            await qualifications.SetSourceAsync(matchId, slot, value, ct);
+        }
+        Flash("Règles de qualification enregistrées.");
+        return Redirect($"/admin/phases/{id}#qualification");
+    }
+
+    [HttpPost("phases/{id:int}/qualifications/generer")]
+    public async Task<IActionResult> GenerateQualifications(int id, CancellationToken ct)
+    {
+        var filled = await qualifications.GenerateAsync(id, ct);
+        Flash(filled == 0
+            ? "Aucune équipe placée : les poules ou matchs sources ne sont pas encore terminés."
+            : $"{filled} place{(filled > 1 ? "s" : "")} remplie{(filled > 1 ? "s" : "")} d'après les classements et résultats actuels.");
+        return Redirect($"/admin/phases/{id}#qualification");
+    }
+
     private async Task<PhasePageVm> BuildPhasePage(int id, GroupInput? newGroup, CancellationToken ct)
     {
         var phase = await competitions.GetPhaseAsync(id, ct);
@@ -203,7 +229,9 @@ public class CompetitionsController(CompetitionAdminService competitions, Season
             NewGroup = newGroup ?? new GroupInput { PhaseId = id, Name = $"Poule {(char)('A' + phase.Groups.Count)}" },
             Knockout = new KnockoutInput { PhaseId = id },
             BracketMatches = bracket,
-            MatchCountByGroup = counts
+            MatchCountByGroup = counts,
+            Slots = phase.Type == PhaseType.Knockout ? await qualifications.SlotsAsync(id, ct) : [],
+            Sources = phase.Type == PhaseType.Knockout ? await qualifications.SourcesAsync(id, ct) : []
         };
     }
 }

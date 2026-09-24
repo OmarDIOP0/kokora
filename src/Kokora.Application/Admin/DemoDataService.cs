@@ -150,15 +150,48 @@ public class DemoDataService(IAppDbContext db)
             }
         }
 
+        // 4 Grandes Zone 5A : demi-finales jouées (dont une aux tirs au but), finale à l'affiche dans 6 jours.
+        var grandes = new Phase { Competition = comps[2], Name = "Demi-finales et finale", Type = PhaseType.Knockout, Order = 1, IsDemo = true };
+        db.Phases.Add(grandes);
+        var semiRound = new Round { Phase = grandes, Name = "Demi-finales", Kind = RoundKind.SemiFinal, Order = 1, IsDemo = true };
+        var finalRound = new Round { Phase = grandes, Name = "Finale", Kind = RoundKind.Final, Order = 2, IsDemo = true };
+        db.Rounds.AddRange(semiRound, finalRound);
+        var semiDay = KokoraTime.Today.AddDays(-1);
+        Match Semi(int pos, Club home, Club away, int hs, int aws, int? hp = null, int? ap = null)
+        {
+            var m = new Match
+            {
+                Phase = grandes, Round = semiRound, BracketPosition = pos, HomeClub = home, AwayClub = away,
+                KickoffAt = ScheduleService.ToUtc(semiDay.ToDateTime(new TimeOnly(15 + pos * 2, 0))), Stadium = stadiums[0],
+                Referee = referees[pos], IsDemo = true
+            };
+            PlayMatch(m, squads[home], squads[away], rng, hs, aws);
+            m.HomePenalties = hp;
+            m.AwayPenalties = ap;
+            db.Matches.Add(m);
+            return m;
+        }
+        Semi(1, clubs[0], clubs[5], 1, 1, 4, 3);
+        Semi(2, clubs[4], clubs[1], 2, 0);
+        db.Matches.Add(new Match
+        {
+            Phase = grandes, Round = finalRound, BracketPosition = 1, HomeClub = clubs[0], AwayClub = clubs[4],
+            HomePlaceholder = "Vainqueur DF1", AwayPlaceholder = "Vainqueur DF2",
+            KickoffAt = ScheduleService.ToUtc(KokoraTime.Today.AddDays(6).ToDateTime(new TimeOnly(17, 0))),
+            Stadium = stadiums[0], Referee = referees[0], IsFeatured = true, IsDemo = true
+        });
+        foreach (var c in new[] { comps[3], comps[4] })
+            db.Phases.Add(new Phase { Competition = c, Name = "Tableau final", Type = PhaseType.Knockout, Order = 1, IsDemo = true });
+
         await db.SaveChangesAsync(ct);
     }
 
     /// <summary>Simule un résultat et ses événements (buteurs, passeurs, cartons) de façon reproductible.</summary>
-    private static void PlayMatch(Match m, List<Player> home, List<Player> away, Random rng)
+    private static void PlayMatch(Match m, List<Player> home, List<Player> away, Random rng, int? homeGoals = null, int? awayGoals = null)
     {
         int Goals() => rng.Next(100) switch { < 25 => 0, < 55 => 1, < 80 => 2, < 93 => 3, _ => 4 };
-        var hs = Goals();
-        var aws = Goals();
+        var hs = homeGoals ?? Goals();
+        var aws = awayGoals ?? Goals();
         m.Status = MatchStatus.Finished;
         m.LivePeriod = LivePeriod.Ended;
         m.HomeScore = hs;

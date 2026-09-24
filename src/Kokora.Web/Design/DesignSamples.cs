@@ -1,5 +1,6 @@
 using Kokora.Application.Common;
 using Kokora.Domain.Enums;
+using Kokora.Application.Public;
 using Kokora.Web.Models;
 
 namespace Kokora.Web.Design;
@@ -38,7 +39,7 @@ public static class DesignSamples
     public static MatchRowVm Live => new()
     {
         Id = 1, Home = Teams[0], Away = Teams[1], Status = MatchStatus.Live, HomeScore = 2, AwayScore = 1,
-        Minute = 67, KickoffAt = At(0, 16, 30), Stadium = "Stade Démo"
+        Minute = "67", KickoffAt = At(0, 16, 30), Stadium = "Stade Démo"
     };
 
     public static IReadOnlyList<MatchGroupVm> Today =>

@@ -6,8 +6,11 @@
     var home = Team(Model.HomeId, Model.Home, Model.HomeColor, Model.HomeColor2, Model.HomeLogo);
     var away = Team(Model.AwayId, Model.Away, Model.AwayColor, Model.AwayColor2, Model.AwayLogo);
     var played = Model.HomeScore.HasValue && Model.AwayScore.HasValue;
+    // Match commencé ou passé : on va directement à la saisie du résultat.
+    var toResult = Model.HomeId is not null && Model.AwayId is not null
+        && (Model.Status is not (MatchStatus.Scheduled or MatchStatus.Postponed) || Model.KickoffAt < DateTimeOffset.UtcNow);
 }
-<a href="/admin/matchs/@Model.Id/modifier" class="match !grid-cols-[64px_1fr_auto]" style="--comp:@Model.CompetitionColor">
+<a href="/admin/matchs/@Model.Id/@(toResult ? "resultat" : "modifier")" class="match !grid-cols-[64px_1fr_auto]" style="--comp:@Model.CompetitionColor">
     <div class="match-time num">
         @if (Model.KickoffAt is { } k)
         {

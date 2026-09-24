@@ -1,4 +1,6 @@
 using Kokora.Application.Admin;
+using Kokora.Application.Common;
+using Kokora.Application.Public;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Kokora.Application;
@@ -15,6 +17,12 @@ public static class DependencyInjection
         services.AddScoped<ScheduleService>();
         services.AddScoped<DemoDataService>();
         services.AddScoped<DashboardService>();
+        services.AddScoped<ResultService>();
+        services.AddScoped<QualificationService>();
+
+        services.AddSingleton<CompetitionCache>();
+        services.AddScoped<StandingsService>();
+        services.AddScoped<MatchQueryService>();
         return services;
     }
 }

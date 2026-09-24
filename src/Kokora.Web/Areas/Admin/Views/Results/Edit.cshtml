@@ -1,0 +1,199 @@
+@model Kokora.Web.Areas.Admin.Controllers.ResultPageVm
+@{
+    var m = Model.Match;
+    var i = Model.Input;
+    ViewData["Title"] = "Résultat";
+    TeamVm T(Kokora.Domain.Clubs.Club c) => new(c.Id, c.Name, c.ShortName, c.Slug, c.PrimaryColor, c.SecondaryColor, c.LogoPath);
+    var home = T(m.HomeClub!);
+    var away = T(m.AwayClub!);
+    var knockout = m.Phase.Type == PhaseType.Knockout;
+    var hasResult = m.Status is not (MatchStatus.Scheduled or MatchStatus.Postponed);
+    var data = new
+    {
+        home = home.Id, away = away.Id,
+        homeName = home.ShortName, awayName = away.ShortName,
+        squads = Model.Squads.ToDictionary(k => k.Key.ToString(), v => v.Value.Select(p => new { id = p.Id, name = p.Name, n = p.Number })),
+        status = (int)i.Status,
+        hs = i.HomeScore, @as = i.AwayScore,
+        knockout, penaltiesRule = m.Phase.HasPenalties,
+        events = i.Events.Select(e => new { type = (int)e.Type, club = e.ClubId, player = e.PlayerId, assist = e.AssistPlayerId, minute = e.Minute })
+    };
+    (MatchStatus Status, string Label)[] statuses =
+    [
+        (MatchStatus.Finished, "Terminé"), (MatchStatus.Forfeit, "Forfait"), (MatchStatus.UnderReview, "Sous réserve"),
+        (MatchStatus.Abandoned, "Arrêté"), (MatchStatus.Replay, "À rejouer")
+    ];
+}
+
+<div class="page-head">
+    <div class="min-w-0">
+        <nav class="crumbs"><a href="/admin/matchs">Calendrier</a><span>/</span><a href="/admin/matchs/@m.Id/modifier">Programmation</a></nav>
+        <h1>Résultat</h1>
+        <p class="mt-1 text-[14px] text-ink-2">@m.Phase.Competition.Name · @(m.Round?.Name ?? m.Group?.Name ?? m.Phase.Name)@(m.KickoffAt is { } k ? " · " + KokoraTime.Long(k) : "")</p>
+    </div>
+</div>
+
+<script type="application/json" id="result-ctx">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(data))</script>
+<form method="post" action="/admin/matchs/@m.Id/resultat" novalidate
+      x-data="resultForm(JSON.parse(document.getElementById('result-ctx').textContent))">
+    <div asp-validation-summary="All" class="error-summary mb-3"></div>
+
+    <section class="section">
+        <header class="section-head"><span>Statut</span></header>
+        <div class="flex flex-wrap gap-2 p-3" role="radiogroup" aria-label="Statut du match">
+            @foreach (var (status, label) in statuses)
+            {
+                <label class="chip cursor-pointer has-[:checked]:bg-ink has-[:checked]:text-bg has-[:checked]:shadow-none">
+                    <input type="radio" name="Status" value="@((int)status)" class="sr-only" x-model.number="status" checked="@(i.Status == status)">
+                    @label
+                </label>
+            }
+        </div>
+        <p class="px-4 pb-3 text-[13px] text-ink-3" x-show="status === @((int)MatchStatus.Abandoned) || status === @((int)MatchStatus.Replay)" x-cloak>
+            Un match arrêté ou à rejouer ne compte pas au classement ; le score éventuel reste indicatif.
+        </p>
+        <p class="px-4 pb-3 text-[13px] text-ink-3" x-show="status === @((int)MatchStatus.UnderReview)" x-cloak>
+            Réserve déposée : le score compte provisoirement, jusqu'à la décision de la commission.
+        </p>
+    </section>
+
+    <!-- Forfait -->
+    <section class="section" x-show="status === @((int)MatchStatus.Forfeit)" x-cloak>
+        <header class="section-head"><span>Équipe déclarée forfait</span></header>
+        <div class="grid grid-cols-2 gap-2 p-3">
+            @foreach (var t in new[] { home, away })
+            {
+                <label class="flex min-h-14 cursor-pointer items-center gap-2 rounded-md border border-line-strong px-3 has-[:checked]:border-loss has-[:checked]:bg-[color-mix(in_srgb,var(--loss)_8%,transparent)]">
+                    <input type="radio" name="ForfeitingClubId" value="@t.Id" checked="@(i.ForfeitingClubId == t.Id)" class="accent-[var(--loss)]">
+                    <crest team="t" /><span class="truncate font-semibold">@t.ShortName</span>
+                </label>
+            }
+        </div>
+        <p class="px-4 pb-3 text-[13px] text-ink-3">Le score administratif (@m.Phase.Competition.Scoring.ForfeitGoalsFor-@m.Phase.Competition.Scoring.ForfeitGoalsAgainst) est appliqué automatiquement.</p>
+    </section>
+
+    <!-- Score -->
+    <section class="section" x-show="status !== @((int)MatchStatus.Forfeit)">
+        <header class="section-head"><span>Score</span></header>
+        <div class="grid grid-cols-2 divide-x divide-line">
+            @foreach (var (t, field, prop) in new[] { (home, "HomeScore", "hs"), (away, "AwayScore", "as") })
+            {
+                <div class="grid justify-items-center gap-2 px-2 py-4">
+                    <div class="flex items-center gap-2"><crest team="t" /><span class="truncate font-semibold">@t.ShortName</span></div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" class="btn btn-secondary btn-icon" @@click="@(prop) = Math.max(0, (@(prop) ?? 0) - 1)" aria-label="Retirer un but à @t.ShortName"><span class="score text-2xl">−</span></button>
+                        <input name="@field" x-model.number="@prop" inputmode="numeric" pattern="[0-9]*" aria-label="Buts @t.Name"
+                               class="input score !h-16 !w-20 text-center !text-[40px]">
+                        <button type="button" class="btn btn-secondary btn-icon" @@click="@(prop) = (@(prop) ?? 0) + 1" aria-label="Ajouter un but à @t.ShortName"><span class="score text-2xl">+</span></button>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="grid grid-cols-2 gap-3 border-t border-line p-3">
+            <div class="field"><label for="hht">Mi-temps @home.ShortName</label><input id="hht" name="HomeHalfTimeScore" value="@i.HomeHalfTimeScore" inputmode="numeric" class="input num"></div>
+            <div class="field"><label for="aht">Mi-temps @away.ShortName</label><input id="aht" name="AwayHalfTimeScore" value="@i.AwayHalfTimeScore" inputmode="numeric" class="input num"></div>
+        </div>
+        @if (knockout)
+        {
+            <div class="border-t border-line px-4 py-2">
+                <label class="check"><input type="checkbox" name="WentToExtraTime" value="true" checked="@i.WentToExtraTime"><span>Prolongations jouées</span></label>
+            </div>
+            <div class="grid grid-cols-2 gap-3 border-t border-line p-3" x-show="needsPenalties" x-cloak>
+                <p class="col-span-2 text-[13.5px] font-semibold text-warn">Match nul : saisissez les tirs au but.</p>
+                <div class="field"><label for="hp">Tirs au but @home.ShortName</label><input id="hp" name="HomePenalties" value="@i.HomePenalties" inputmode="numeric" class="input num" :disabled="!needsPenalties"></div>
+                <div class="field"><label for="ap">Tirs au but @away.ShortName</label><input id="ap" name="AwayPenalties" value="@i.AwayPenalties" inputmode="numeric" class="input num" :disabled="!needsPenalties"></div>
+            </div>
+        }
+    </section>
+
+    <!-- Buts et cartons -->
+    <section class="section" x-show="status !== @((int)MatchStatus.Forfeit)">
+        <header class="section-head">
+            <span>Buts et cartons</span>
+            <span class="sub" x-show="goalsMismatch" x-cloak x-text="`${goals(home)}-${goals(away)} saisis`"></span>
+        </header>
+        <p class="px-4 pt-3 text-[13px] text-ink-3">Facultatif mais recommandé : les buteurs, passeurs et cartons alimentent les statistiques et les suspensions.</p>
+
+        <template x-for="(e, idx) in events" :key="e.key">
+            <div class="grid grid-cols-[1fr_auto] gap-2 border-b border-line p-3 sm:grid-cols-[150px_1fr_1fr_76px_auto] sm:items-end">
+                <input type="hidden" :name="`Events[${idx}].ClubId`" :value="e.club">
+                <div class="field col-span-2 sm:col-span-1">
+                    <label :for="`t${e.key}`" x-text="e.club === home ? homeName : awayName"></label>
+                    <select :id="`t${e.key}`" class="input" :name="`Events[${idx}].Type`" x-model.number="e.type">
+                        <option value="1">But</option><option value="2">But sur penalty</option><option value="3">But contre son camp</option>
+                        <option value="10">Carton jaune</option><option value="11">2e jaune (exclusion)</option><option value="12">Carton rouge</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label :for="`p${e.key}`" x-text="e.type === 3 ? 'Joueur adverse (csc)' : (isGoal(e) ? 'Buteur' : 'Joueur')"></label>
+                    <select :id="`p${e.key}`" class="input" :name="`Events[${idx}].PlayerId`" x-model.number="e.player">
+                        <option value="">Non précisé</option>
+                        <template x-for="p in squad(e.type === 3 ? other(e.club) : e.club)" :key="p.id">
+                            <option :value="p.id" x-text="(p.n ? p.n + '. ' : '') + p.name" :selected="p.id === e.player"></option>
+                        </template>
+                    </select>
+                </div>
+                <div class="field" x-show="e.type === 1 || e.type === 2">
+                    <label :for="`a${e.key}`">Passeur</label>
+                    <select :id="`a${e.key}`" class="input" :name="`Events[${idx}].AssistPlayerId`" x-model.number="e.assist" :disabled="!(e.type === 1 || e.type === 2)">
+                        <option value="">Aucun</option>
+                        <template x-for="p in squad(e.club)" :key="p.id">
+                            <option :value="p.id" x-text="(p.n ? p.n + '. ' : '') + p.name" :selected="p.id === e.assist"></option>
+                        </template>
+                    </select>
+                </div>
+                <div class="field">
+                    <label :for="`m${e.key}`">Minute</label>
+                    <input :id="`m${e.key}`" class="input num" inputmode="numeric" :name="`Events[${idx}].Minute`" x-model.number="e.minute" placeholder="—">
+                </div>
+                <button type="button" class="btn btn-ghost btn-icon self-end text-loss" @@click="events.splice(idx, 1)" aria-label="Retirer"><icon name="trash-2" /></button>
+            </div>
+        </template>
+
+        <div class="flex flex-wrap gap-2 p-3">
+            <button type="button" class="btn btn-secondary btn-sm" @@click="add(home, 1)"><icon name="volleyball" />But @home.ShortName</button>
+            <button type="button" class="btn btn-secondary btn-sm" @@click="add(away, 1)"><icon name="volleyball" />But @away.ShortName</button>
+            <button type="button" class="btn btn-secondary btn-sm" @@click="add(home, 10)"><span class="card-icon yellow"></span>Carton @home.ShortName</button>
+            <button type="button" class="btn btn-secondary btn-sm" @@click="add(away, 10)"><span class="card-icon yellow"></span>Carton @away.ShortName</button>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="form-grid">
+            <div class="field">
+                <label for="notes">Notes (visibles sur la fiche du match)</label>
+                <textarea id="notes" name="Notes" class="input textarea" rows="3" maxlength="1000">@i.Notes</textarea>
+            </div>
+        </div>
+        <div class="form-actions sticky-mobile">
+            <button class="btn btn-primary"><icon name="check" />Enregistrer le résultat</button>
+            <a href="/admin/matchs" class="btn btn-ghost">Annuler</a>
+            @if (hasResult)
+            {
+                <button formaction="/admin/matchs/@m.Id/resultat/effacer" formnovalidate class="btn btn-ghost ml-auto text-loss"
+                        data-confirm="Effacer le résultat, les buts et les cartons de ce match ?"><icon name="undo-2" />Effacer</button>
+            }
+        </div>
+    </section>
+</form>
+
+<script>
+    // Composant Alpine du formulaire de résultat (données injectées côté serveur).
+    function resultForm(d) {
+        let seq = 0;
+        return {
+            ...d,
+            events: d.events.map(e => ({ ...e, key: ++seq })),
+            get needsPenalties() { return this.knockout && this.penaltiesRule && this.hs !== null && this.hs !== '' && this.hs === this.as; },
+            isGoal(e) { return e.type === 1 || e.type === 2 || e.type === 3; },
+            goals(club) { return this.events.filter(e => this.isGoal(e) && e.club === club).length; },
+            get goalsMismatch() {
+                const g = this.events.filter(e => this.isGoal(e)).length;
+                return g > 0 && (this.goals(this.home) !== (this.hs ?? 0) || this.goals(this.away) !== (this.as ?? 0));
+            },
+            squad(club) { return this.squads[String(club)] ?? []; },
+            other(club) { return club === this.home ? this.away : this.home; },
+            add(club, type) { this.events.push({ key: ++seq, type, club, player: null, assist: null, minute: null }); },
+        };
+    }
+</script>

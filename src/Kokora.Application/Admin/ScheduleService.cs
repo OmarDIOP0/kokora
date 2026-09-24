@@ -18,7 +18,7 @@ public record AdminMatchItem(int Id, string Competition, string CompetitionColor
 
 public record ProposedFixture(int Matchday, DateTimeOffset KickoffAt, int HomeId, string Home, int AwayId, string Away);
 
-public class ScheduleService(IAppDbContext db)
+public class ScheduleService(IAppDbContext db, QualificationService qualifications, CompetitionCache cache)
 {
     public async Task<List<AdminMatchItem>> ListAsync(MatchFilter f, CancellationToken ct = default)
     {
@@ -132,6 +132,8 @@ public class ScheduleService(IAppDbContext db)
 
         if (input.Id == 0) db.Matches.Add(match);
         await db.SaveChangesAsync(ct);
+        if (input.Id != 0) await qualifications.MarkManualAsync(match.Id, match.HomeClubId, match.AwayClubId, ct);
+        cache.Invalidate(phase.CompetitionId);
         return match.Id;
     }
 

@@ -1,0 +1,23 @@
+@* Sélecteur de compétition (puces). ViewData : "Ctx" (PublicContext), "Base" (chemin, peut contenir {slug}), "AllowAll". *@
+@{
+    var ctx = (Kokora.Web.Infrastructure.PublicContext)ViewData["Ctx"]!;
+    var basePath = ViewData["Base"] as string ?? "/";
+    var allowAll = ViewData["AllowAll"] is not false;
+    string Href(string slug) => basePath.Contains("{slug}") ? basePath.Replace("{slug}", slug) : $"{basePath}?c={slug}";
+}
+@if (ctx.Competitions.Count > 0)
+{
+    <nav class="compbar" aria-label="Compétition">
+        @if (allowAll)
+        {
+            <a href="@Href("toutes")" class="chip" aria-current="@(ctx.Selected is null ? "true" : null)">Toutes</a>
+        }
+        @foreach (var c in ctx.Competitions)
+        {
+            var on = ctx.Selected?.Id == c.Id;
+            <a href="@Href(c.Slug)" class="chip" style="--comp:@c.Color" aria-current="@(on ? "true" : null)">
+                <span class="dot"></span>@c.Name
+            </a>
+        }
+    </nav>
+}

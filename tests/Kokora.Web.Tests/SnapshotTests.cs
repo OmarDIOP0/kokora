@@ -41,5 +41,24 @@ public class SnapshotTests(DemoDataFixture fx)
         var client = fx.Factory.ClientAs(RolesForTests.Admin);
         foreach (var (name, url) in pages)
             await File.WriteAllTextAsync(Path.Combine(dir, name + ".html"), await client.GetStringAsync(url));
+
+        // Pages publiques (visiteur anonyme).
+        var yesterday = Kokora.Application.Common.KokoraTime.Today.AddDays(-1);
+        var played = await fx.QueryAsync(db => db.Matches.Where(m => m.IsDemo && m.Status == MatchStatus.Finished && m.HomePenalties != null)
+            .Select(m => m.Id).FirstAsync());
+        var publicPages = new Dictionary<string, string>
+        {
+            ["public-accueil"] = "/?c=toutes", ["public-hier"] = $"/?date={yesterday:yyyy-MM-dd}&c=toutes",
+            ["public-resultats"] = "/?vue=resultats&c=toutes", ["public-a-venir"] = "/?vue=a-venir&c=toutes",
+            ["public-classement-5b"] = "/classements/zonale-5b", ["public-tableau"] = "/classements/4-grandes-zone-5a",
+            ["public-plus"] = "/plus",
+        };
+        var anonymous = fx.Factory.CreateClient(); // suit les redirections (adresse canonique des matchs)
+        foreach (var (name, url) in publicPages)
+            await File.WriteAllTextAsync(Path.Combine(dir, name + ".html"), await anonymous.GetStringAsync(url));
+        await File.WriteAllTextAsync(Path.Combine(dir, "public-match.html"), await anonymous.GetStringAsync($"/matchs/{played}"));
+        var regular = await fx.QueryAsync(db => db.Matches.Where(m => m.IsDemo && m.Status == MatchStatus.Finished && m.GroupId != null
+            && m.Events.Count >= 3).Select(m => m.Id).FirstAsync());
+        await File.WriteAllTextAsync(Path.Combine(dir, "public-match-poule.html"), await anonymous.GetStringAsync($"/matchs/{regular}"));
     }
 }

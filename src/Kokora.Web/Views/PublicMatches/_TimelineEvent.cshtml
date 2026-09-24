@@ -1,0 +1,50 @@
+@model TimelineEventVm
+@{
+    var icon = Model.Type switch
+    {
+        MatchEventType.Goal or MatchEventType.PenaltyGoal or MatchEventType.OwnGoal => "goal",
+        MatchEventType.Substitution => "sub",
+        MatchEventType.YellowCard => "yellow",
+        MatchEventType.RedCard or MatchEventType.SecondYellow => "red",
+        MatchEventType.MissedPenalty => "miss",
+        _ => "other"
+    };
+    var suffix = Model.Type switch
+    {
+        MatchEventType.PenaltyGoal => " (pén.)",
+        MatchEventType.OwnGoal => " (csc)",
+        MatchEventType.MissedPenalty => " (pén. manqué)",
+        MatchEventType.SecondYellow => " (2e jaune)",
+        _ => ""
+    };
+    var label = icon switch
+    {
+        "goal" => "But", "sub" => "Remplacement", "yellow" => "Carton jaune", "red" => "Carton rouge", "miss" => "Penalty manqué", _ => ""
+    };
+}
+@if (icon is "yellow" or "red")
+{
+    <span class="card-icon @(icon == "yellow" ? "yellow" : "red")" role="img" aria-label="@label"></span>
+}
+else if (icon == "goal")
+{
+    <icon name="volleyball" class="text-ink-2" label="@label" />
+}
+else if (icon == "sub")
+{
+    <icon name="arrow-left-right" class="text-ink-3" label="@label" />
+}
+<span>
+    @if (icon == "sub")
+    {
+        <span class="text-win">@Model.Player</span> <span class="text-ink-3">· @Model.PlayerOut</span>
+    }
+    else
+    {
+        @(Model.Player ?? "Joueur non précisé")<span class="text-[13px] text-ink-3">@suffix</span>
+        @if (Model.Assist is not null)
+        {
+            <span class="block text-[12.5px] text-ink-3">passe : @Model.Assist</span>
+        }
+    }
+</span>

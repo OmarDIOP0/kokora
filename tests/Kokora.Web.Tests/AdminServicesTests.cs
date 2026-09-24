@@ -8,13 +8,20 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Kokora.Web.Tests;
 
-/// <summary>Base dédiée, vide au départ : chaque test crée ses propres données.</summary>
+/// <summary>Base dédiée, vide au départ : chaque test crée ses propres données. Une base par classe de tests.</summary>
 public class ServicesFixture : IDisposable
 {
-    public KokoraWebFactory Factory { get; } = new("kokora_tests_services");
-    public ServicesFixture() => _ = Factory.Server;
+    public KokoraWebFactory Factory { get; }
+    public ServicesFixture() : this("kokora_tests_services") { }
+    protected ServicesFixture(string database)
+    {
+        Factory = new KokoraWebFactory(database);
+        _ = Factory.Server;
+    }
     public void Dispose() => Factory.Dispose();
 }
+
+public class ResultsFixture() : ServicesFixture("kokora_tests_results");
 
 public class AdminServicesTests(ServicesFixture fx) : IClassFixture<ServicesFixture>
 {
@@ -191,7 +198,7 @@ public class AdminServicesTests(ServicesFixture fx) : IClassFixture<ServicesFixt
         var counts = await demo.CountAsync();
         counts.Clubs.Should().Be(17);
         counts.Players.Should().Be(17 * 14);
-        counts.Matches.Should().Be(12 + 12 + 20 + 12); // aller-retour : poule de 4 = 12 matchs, poule de 5 = 20
+        counts.Matches.Should().Be(12 + 12 + 20 + 12 + 3); // poules (4 = 12 matchs, 5 = 20) + demies et finale des 4 Grandes 5A
         (await s.Db.Matches.CountAsync(m => m.IsDemo && m.Status == MatchStatus.Finished)).Should().BeGreaterThan(0);
         // Buts cohérents avec le score.
         var played = await s.Db.Matches.Include(m => m.Events).Where(m => m.IsDemo && m.Status == MatchStatus.Finished).ToListAsync();

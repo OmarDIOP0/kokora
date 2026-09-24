@@ -18,6 +18,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 builder.Services.AddScoped<AdminSeason>();
 builder.Services.AddScoped<Kokora.Web.Areas.Admin.Models.Lookups>();
+builder.Services.AddScoped<PublicContext>();
 
 builder.Services.AddControllersWithViews(options =>
 {
@@ -25,6 +26,9 @@ builder.Services.AddControllersWithViews(options =>
     FrenchModelBinding.Configure(options.ModelBindingMessageProvider);
 });
 builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");
+// Les accents (é, è, à…) sont écrits tels quels dans le HTML plutôt qu'en entités : pages plus légères et lisibles.
+builder.Services.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(o =>
+    o.TextEncoderSettings = new System.Text.Encodings.Web.TextEncoderSettings(System.Text.Unicode.UnicodeRanges.All));
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCompression(o => o.EnableForHttps = true);
 builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = 12 * 1024 * 1024);

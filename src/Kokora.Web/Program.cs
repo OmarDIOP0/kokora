@@ -37,6 +37,7 @@ builder.Services.AddSingleton<ILiveNotifier, Kokora.Web.Live.SignalRLiveNotifier
 builder.Services.AddControllersWithViews(options =>
 {
     options.Filters.Add(new Microsoft.AspNetCore.Mvc.AutoValidateAntiforgeryTokenAttribute());
+    options.Filters.Add<ExpiredFormFilter>();
     FrenchModelBinding.Configure(options.ModelBindingMessageProvider);
 });
 builder.Services.AddAntiforgery(o => o.HeaderName = "RequestVerificationToken");

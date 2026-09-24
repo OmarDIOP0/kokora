@@ -135,12 +135,13 @@ public partial class AdminPagesTests(DemoDataFixture fx)
         res.StatusCode.Should().Be(HttpStatusCode.Redirect);
         (await fx.QueryAsync(db => db.Seasons.AnyAsync(s => s.Year == 2031))).Should().BeTrue();
 
-        // Sans jeton : refusé.
+        // Sans jeton : refusé (retour au formulaire avec un message, rien n'est enregistré).
         var forged = await client.PostAsync("/admin/saisons/enregistrer", new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["Year"] = "2032", ["Name"] = "Pirate"
         }));
-        forged.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        forged.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        (await fx.QueryAsync(db => db.Seasons.AnyAsync(s => s.Year == 2032))).Should().BeFalse();
     }
 
     [Fact]

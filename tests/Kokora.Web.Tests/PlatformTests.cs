@@ -111,3 +111,33 @@ public class PlatformTests(DemoDataFixture fx)
         Views("classements").Should().Be(before + 2); // robot et fragment htmx ignorés
     }
 }
+
+[Collection(DemoCollection.Name)]
+public class ExpiredFormTests(DemoDataFixture fx)
+{
+    [Fact]
+    public async Task Expired_forms_redirect_back_with_a_message_instead_of_a_blank_page()
+    {
+        var client = fx.Factory.ClientAs(null);
+        var post = new HttpRequestMessage(HttpMethod.Post, "/compte/connexion")
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string> { ["Login"] = "x@test.sn", ["Password"] = "faux12345" })
+        };
+        post.Headers.Referrer = new Uri("http://localhost/compte/connexion?returnUrl=%2Fadmin");
+        var res = await client.SendAsync(post);
+        res.StatusCode.Should().Be(HttpStatusCode.Redirect);
+        res.Headers.Location!.ToString().Should().Be("/compte/connexion?returnUrl=%2Fadmin");
+
+        // Le message s'affiche une fois sur la page du formulaire (cookie TempData renvoyé).
+        var cookies = string.Join("; ", res.Headers.GetValues("Set-Cookie").Select(c => c.Split(';')[0]));
+        var page = new HttpRequestMessage(HttpMethod.Get, res.Headers.Location);
+        page.Headers.Add("Cookie", cookies);
+        (await (await client.SendAsync(page)).Content.ReadAsStringAsync()).Should().Contain("La page avait expiré");
+
+        var htmx = new HttpRequestMessage(HttpMethod.Post, "/compte/connexion") { Content = new FormUrlEncodedContent([]) };
+        htmx.Headers.Add("HX-Request", "true");
+        var htmxRes = await client.SendAsync(htmx);
+        htmxRes.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await htmxRes.Content.ReadAsStringAsync()).Should().Contain("expiré");
+    }
+}

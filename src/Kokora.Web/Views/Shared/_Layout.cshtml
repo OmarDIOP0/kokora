@@ -69,6 +69,11 @@
     </div>
 
     <main id="contenu" class="mx-auto w-full max-w-[1280px] md:px-4 md:py-4">
+        @if (TempData[ExpiredFormFilter.Key] is string expired)
+        {
+            TempData.Remove("k-flash"); // message déjà affiché ici (le toast ne sert que dans l'admin)
+            <p class="notice mx-auto mb-3 max-w-[640px] !bg-[color-mix(in_srgb,var(--warn)_14%,transparent)]" role="alert"><icon name="rotate-ccw" />@expired</p>
+        }
         @RenderBody()
     </main>
 

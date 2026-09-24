@@ -3,6 +3,7 @@
     var title = ViewData["Title"] as string ?? "Administration";
     var csrf = Antiforgery.GetAndStoreTokens(Context).RequestToken;
     var flash = TempData["k-flash"] as string;
+    TempData.Remove(Kokora.Web.Infrastructure.ExpiredFormFilter.Key); // déjà affiché par le toast
 }
 <!DOCTYPE html>
 <html lang="fr">

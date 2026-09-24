@@ -112,6 +112,7 @@ public class HomeController(PublicContext ctx, MatchQueryService queries, Standi
 
     // Toutes méthodes : la page d'erreur est rejouée avec la méthode de la requête d'origine (ex. POST).
     [Route("/erreur")]
+    [IgnoreAntiforgeryToken] // la page d'erreur doit toujours pouvoir s'afficher, même après un formulaire expiré
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error(int? code)
     {

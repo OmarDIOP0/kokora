@@ -1,15 +1,20 @@
 @{
     var code = ViewData["Code"] as int?;
     var notFound = code == 404;
-    ViewData["Title"] = notFound ? "Page introuvable" : "Erreur";
+    var (title, text) = code switch
+    {
+        404 => ("Page introuvable", "Ce lien n'existe pas ou plus. Le match a peut-être été supprimé ou reprogrammé."),
+        400 => ("Demande refusée", "La page avait peut-être expiré. Revenez en arrière, rechargez la page et recommencez."),
+        429 => ("Trop de tentatives", "Par sécurité, patientez quelques minutes avant de réessayer."),
+        403 => ("Accès refusé", "Cette page est réservée à l'équipe d'organisation."),
+        _ => ("Une erreur est survenue", "Réessayez dans un instant. Si le problème persiste, contactez l'organisation.")
+    };
+    ViewData["Title"] = title;
 }
 <section class="section mx-auto max-w-[560px] md:mt-6">
     <div class="px-4 py-10 text-center">
-        <p class="font-display text-2xl font-bold">@(notFound ? "Page introuvable" : "Une erreur est survenue")</p>
-        <p class="mt-1 text-ink-2">
-            @(notFound ? "Ce lien n'existe pas ou plus. Le match a peut-être été supprimé ou reprogrammé."
-                       : "Réessayez dans un instant. Si le problème persiste, contactez l'organisation.")
-        </p>
+        <p class="font-display text-2xl font-bold">@title</p>
+        <p class="mt-1 text-ink-2">@text</p>
         @if (!notFound && ViewData["RequestId"] is string id)
         {
             <p class="mt-4 text-xs text-ink-3">Référence : <code>@id</code></p>

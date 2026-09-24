@@ -1,0 +1,49 @@
+@model Kokora.Web.Areas.Admin.Controllers.DrawPageVm
+@{
+    ViewData["Title"] = "Tirage des poules";
+    const string example = "Zone 5A\nPoule A : Thiossane, Diamono, Pikine, Natangué, Mbaxaal\nPoule B : Médine, Avenir, Génération, Diambar, Manko\n\nZone 5B\nPoule A : Diamaguène, Daradji, Téranga, Espoir";
+}
+<div class="page-head">
+    <div>
+        <nav class="crumbs"><a href="/admin/saisons">Saisons</a></nav>
+        <h1>Tirage des poules</h1>
+        <p class="mt-1 max-w-[64ch] text-[14px] text-ink-2">
+            Saison de travail : <b>@(Model.SeasonName ?? "aucune")</b>. Collez le tirage : une ligne par zone, puis une ligne par poule
+            (« Poule A : équipe, équipe, … »). Les équipes inconnues sont créées (préfixe « ASC », zone de la compétition) ;
+            une poule déjà importée est mise à jour. On peut relancer l'import sans risque.
+        </p>
+    </div>
+</div>
+
+<div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+    <section class="section">
+        <form method="post" action="/admin/tirage">
+            <div class="form-grid">
+                <div class="field">
+                    <label for="draw-text">Tirage</label>
+                    <textarea id="draw-text" name="text" rows="14" class="input textarea num" placeholder="@example" required>@Model.Text</textarea>
+                    @if (Model.Error is not null) { <span class="error" role="alert">@Model.Error</span> }
+                </div>
+            </div>
+            <div class="form-actions"><button class="btn btn-primary"><icon name="shuffle" />Importer le tirage</button></div>
+        </form>
+        @if (Model.Report is { } r)
+        {
+            <div class="border-t border-line px-4 py-3">
+                <p class="text-[14px] font-semibold">@r.Groups poule(s) · @r.ClubsCreated équipe(s) créée(s) · @r.ClubsFound déjà connue(s)</p>
+                <pre class="mt-2 whitespace-pre-wrap text-[13px] text-ink-2">@string.Join("\n", r.Lines)</pre>
+            </div>
+        }
+    </section>
+
+    <section class="section">
+        <header class="section-head"><span>Tester avec des données fictives</span></header>
+        <p class="px-4 pt-3 text-[14px] text-ink-2">
+            Ajoute aux poules de la saison des effectifs « Joueur 1 … 14 », le calendrier (une journée par semaine, la première il y a 3 semaines)
+            et des résultats simulés. Tout est marqué démo : « Données de démo → Supprimer » les retire en gardant équipes et poules.
+        </p>
+        <form method="post" action="/admin/tirage/fictif" data-confirm="Ajouter des joueurs, un calendrier et des résultats FICTIFS à cette saison ?">
+            <div class="form-actions"><button class="btn btn-secondary"><icon name="flask-conical" />Compléter avec des données fictives</button></div>
+        </form>
+    </section>
+</div>

@@ -16,6 +16,7 @@ public static class DependencyInjection
         services.AddScoped<PlayerAdminService>();
         services.AddScoped<ScheduleService>();
         services.AddScoped<DemoDataService>();
+        services.AddScoped<DrawImportService>();
         services.AddScoped<DashboardService>();
         services.AddScoped<ResultService>();
         services.AddScoped<QualificationService>();

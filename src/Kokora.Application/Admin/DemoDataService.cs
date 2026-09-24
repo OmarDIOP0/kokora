@@ -14,7 +14,7 @@ namespace Kokora.Application.Admin;
 /// Données de démonstration clairement FICTIVES (« ASC Démo 1 », « Joueur 7 Démo 3 »…), toutes marquées IsDemo
 /// et supprimables en un clic. Elles servent à voir l'application remplie avant la vraie saison.
 /// </summary>
-public class DemoDataService(IAppDbContext db)
+public class DemoDataService(IAppDbContext db, CompetitionCache cache)
 {
     private static readonly (string Primary, string Secondary)[] Colors =
     [
@@ -259,6 +259,94 @@ public class DemoDataService(IAppDbContext db)
         await db.SaveChangesAsync(ct);
     }
 
+    /// <summary>
+    /// Complète une saison réelle (équipes et poules saisies ou importées) avec des données FICTIVES marquées démo :
+    /// effectifs « Joueur 1 … 14 », calendrier des poules sans matchs (une journée par semaine, la première il y a 3 semaines)
+    /// et résultats simulés des matchs passés. « Supprimer les données de démo » les retire en gardant équipes et poules.
+    /// </summary>
+    public async Task<FillReport> FillSeasonAsync(int seasonId, CancellationToken ct = default)
+    {
+        if (!await db.Seasons.AnyAsync(s => s.Id == seasonId, ct)) throw new NotFoundException("Saison");
+        var groups = await db.Groups.Include(g => g.Teams).ThenInclude(t => t.Club).Include(g => g.Phase).ThenInclude(p => p.Competition)
+            .Where(g => g.Phase.Competition.SeasonId == seasonId && g.Phase.Type == PhaseType.League && g.Teams.Count >= 2)
+            .OrderBy(g => g.Phase.Competition.Order).ThenBy(g => g.Order).ThenBy(g => g.Name)
+            .ToListAsync(ct);
+        if (groups.Count == 0)
+            throw new BusinessRuleException("Aucune poule dans cette saison : importez d'abord le tirage (ou créez les poules).");
+
+        var rng = new Random(seasonId * 31 + 7);
+        var clubs = groups.SelectMany(g => g.Teams).Select(t => t.Club).DistinctBy(c => c.Id).ToList();
+        var clubIds = clubs.Select(c => c.Id).ToList();
+        var existing = await db.SquadMembers.Include(s => s.Player)
+            .Where(s => s.SeasonId == seasonId && clubIds.Contains(s.ClubId)).ToListAsync(ct);
+        var squads = existing.GroupBy(s => s.ClubId).ToDictionary(g => g.Key, g => g.OrderBy(s => s.ShirtNumber ?? 99).Select(s => s.Player).ToList());
+
+        PlayerPosition[] positions = [PlayerPosition.Goalkeeper, .. Enumerable.Repeat(PlayerPosition.Defender, 5),
+            .. Enumerable.Repeat(PlayerPosition.Midfielder, 5), .. Enumerable.Repeat(PlayerPosition.Forward, 3)];
+        var playersCreated = 0;
+        foreach (var club in clubs.Where(c => !squads.ContainsKey(c.Id)))
+        {
+            var players = new List<Player>();
+            for (var n = 1; n <= positions.Length; n++)
+            {
+                var p = new Player
+                {
+                    FirstName = $"Joueur {n}", LastName = club.ShortName, Slug = $"joueur-{n}-{club.Slug}-fictif",
+                    Position = positions[n - 1], IsDemo = true
+                };
+                players.Add(p);
+                db.SquadMembers.Add(new SquadMember { SeasonId = seasonId, Club = club, Player = p, ShirtNumber = n, IsCaptain = n == 4, IsDemo = true });
+            }
+            db.Players.AddRange(players);
+            squads[club.Id] = players;
+            playersCreated += players.Count;
+        }
+
+        var withMatches = await db.Matches.Where(m => m.GroupId != null && groups.Select(g => g.Id).Contains(m.GroupId.Value))
+            .Select(m => m.GroupId!.Value).Distinct().ToListAsync(ct);
+        var firstDay = KokoraTime.Today.AddDays(-21);
+        var now = DateTimeOffset.UtcNow;
+        int matchesCreated = 0, played = 0;
+        foreach (var (group, gi) in groups.Select((g, i) => (g, i)))
+        {
+            if (withMatches.Contains(group.Id)) continue;
+            var byId = group.Teams.ToDictionary(t => t.ClubId, t => t.Club);
+            var fixtures = RoundRobin.Generate(group.Teams.OrderBy(t => t.Seed).Select(t => t.ClubId).ToList(), homeAndAway: false);
+            foreach (var day in fixtures.GroupBy(f => f.Matchday))
+            {
+                // Poules réparties sur trois jours de la semaine ; deux horaires par jour.
+                var date = firstDay.AddDays(7 * (day.Key - 1) + gi % 3);
+                foreach (var (f, slot) in day.Select((f, i) => (f, i)))
+                {
+                    var m = new Match
+                    {
+                        PhaseId = group.PhaseId, GroupId = group.Id, Matchday = f.Matchday,
+                        HomeClub = byId[f.HomeId], AwayClub = byId[f.AwayId],
+                        KickoffAt = ScheduleService.ToUtc(date.ToDateTime(slot % 2 == 0 ? new TimeOnly(16, 0) : new TimeOnly(17, 45))),
+                        IsDemo = true
+                    };
+                    if (m.KickoffAt < now.AddHours(-2))
+                    {
+                        if (squads[f.HomeId].Count >= 14 && squads[f.AwayId].Count >= 14)
+                            PlayMatch(m, squads[f.HomeId], squads[f.AwayId], rng);
+                        else
+                        {
+                            (m.HomeScore, m.AwayScore) = (rng.Next(0, 4), rng.Next(0, 3));
+                            m.Status = MatchStatus.Finished;
+                            m.LivePeriod = LivePeriod.Ended;
+                        }
+                        played++;
+                    }
+                    db.Matches.Add(m);
+                    matchesCreated++;
+                }
+            }
+        }
+        await db.SaveChangesAsync(ct);
+        foreach (var compId in groups.Select(g => g.Phase.CompetitionId).Distinct()) cache.Invalidate(compId);
+        return new FillReport(playersCreated, matchesCreated, played);
+    }
+
     /// <summary>Simule un résultat et ses événements (buteurs, passeurs, cartons) de façon reproductible.</summary>
     private static void PlayMatch(Match m, List<Player> home, List<Player> away, Random rng, int? homeGoals = null, int? awayGoals = null)
     {
@@ -349,3 +437,5 @@ public class DemoDataService(IAppDbContext db)
 }
 
 public record DemoCounts(int Seasons, int Clubs, int Players, int Matches);
+
+public record FillReport(int Players, int Matches, int Played);

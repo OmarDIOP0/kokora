@@ -1,7 +1,7 @@
 @model DemoCounts
 @{
     ViewData["Title"] = "Données de démo";
-    var present = Model.Clubs > 0;
+    var present = Model.Clubs + Model.Players + Model.Matches > 0;
 }
 
 <div class="page-head">

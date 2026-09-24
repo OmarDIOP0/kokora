@@ -8,7 +8,10 @@
         <p class="label">Saison</p>
         <h1>Saisons et compétitions</h1>
     </div>
-    <a href="/admin/saisons/nouvelle" class="btn btn-primary btn-sm"><icon name="plus" />Nouvelle saison</a>
+    <div class="flex flex-wrap gap-2">
+        <a href="/admin/tirage" class="btn btn-secondary btn-sm"><icon name="shuffle" />Importer un tirage</a>
+        <a href="/admin/saisons/nouvelle" class="btn btn-primary btn-sm"><icon name="plus" />Nouvelle saison</a>
+    </div>
 </div>
 
 @if (Model.Seasons.Count == 0)

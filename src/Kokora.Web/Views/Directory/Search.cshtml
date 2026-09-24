@@ -1,0 +1,19 @@
+@model SearchResults
+@{
+    ViewData["Title"] = "Recherche";
+    var q = ViewData["Query"] as string;
+}
+<div class="mx-auto max-w-[640px]">
+    <form action="/recherche" method="get" role="search" class="sticky top-[calc(56px+env(safe-area-inset-top))] z-10 border-b border-line bg-surface p-3 md:static md:mt-2 md:rounded-md md:border">
+        <label for="q" class="sr-only">Rechercher une équipe ou un joueur</label>
+        <div class="relative">
+            <icon name="search" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
+            <input id="q" name="q" type="search" value="@q" autofocus autocomplete="off" enterkeyhint="search"
+                   class="input !pl-10" placeholder="Équipe, joueur, surnom, quartier…"
+                   hx-get="/recherche" hx-trigger="input changed delay:200ms, search" hx-target="#results" hx-push-url="true" hx-sync="this:replace">
+        </div>
+    </form>
+    <div id="results" class="mt-3" aria-live="polite">
+        <partial name="_SearchResults" model="Model" />
+    </div>
+</div>

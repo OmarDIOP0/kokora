@@ -9,6 +9,8 @@ namespace Kokora.Application.Common;
 /// </summary>
 public class CompetitionCache(IMemoryCache cache)
 {
+    /// <summary>Clé des données qui couvrent toute la saison : invalidée à chaque changement de n'importe quelle compétition.</summary>
+    public const int SeasonWide = 0;
     private static readonly ConcurrentDictionary<int, int> Versions = new();
     private static readonly TimeSpan Lifetime = TimeSpan.FromMinutes(30);
 
@@ -21,5 +23,9 @@ public class CompetitionCache(IMemoryCache cache)
         return value;
     }
 
-    public void Invalidate(int competitionId) => Versions.AddOrUpdate(competitionId, 1, (_, v) => v + 1);
+    public void Invalidate(int competitionId)
+    {
+        Versions.AddOrUpdate(competitionId, 1, (_, v) => v + 1);
+        Versions.AddOrUpdate(SeasonWide, 1, (_, v) => v + 1);
+    }
 }

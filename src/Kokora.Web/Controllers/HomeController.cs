@@ -107,12 +107,7 @@ public class HomeController(PublicContext ctx, MatchQueryService queries, Standi
     }
 
     /// <summary>Sections des phases suivantes : page d'attente honnête plutôt qu'un lien mort.</summary>
-    [HttpGet("/stats")]
     [HttpGet("/infos")]
-    [HttpGet("/equipes")]
-    [HttpGet("/equipes/{slug}")]
-    [HttpGet("/joueurs/{slug}")]
-    [HttpGet("/recherche")]
     public IActionResult Soon()
     {
         var section = Request.Path.Value!.Trim('/').Split('/')[0];

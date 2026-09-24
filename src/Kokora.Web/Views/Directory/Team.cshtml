@@ -1,0 +1,181 @@
+@model TeamPageData
+@{
+    var t = Model.Team;
+    ViewData["Title"] = t.Name;
+    ViewData["Description"] = $"{t.Name} : calendrier, résultats, classement, effectif et statistiques. Navétane de Nguékokh.";
+    var chronological = Model.Results.Where(r => r.Status != MatchStatus.Abandoned && r.ShowScore).Reverse().ToList();
+    var chart = chronological.Select(r =>
+    {
+        var home = r.Home?.Id == t.Id;
+        var opp = home ? r.Away : r.Home;
+        return new { label = opp?.ShortName ?? "?", gf = home ? r.HomeScore : r.AwayScore, ga = home ? r.AwayScore : r.HomeScore };
+    });
+    var byPosition = Model.Squad.GroupBy(p => p.Position).OrderBy(g => g.Key == PlayerPosition.Unknown).ThenBy(g => g.Key);
+    string PositionLabel(PlayerPosition p) => p switch
+    {
+        PlayerPosition.Goalkeeper => "Gardiens", PlayerPosition.Defender => "Défenseurs", PlayerPosition.Midfielder => "Milieux",
+        PlayerPosition.Forward => "Attaquants", _ => "Autres"
+    };
+    var wide = new ViewDataDictionary(ViewData) { ["Wide"] = true };
+}
+@section Head {
+    <meta property="og:title" content="@t.Name · Kokora">
+    <meta property="og:description" content="@ViewData["Description"]">
+    @if (chronological.Count > 1) { <script type="module" src="~/dist/charts.js" asp-append-version="true"></script> }
+}
+
+<div class="mx-auto max-w-[960px]" x-data="{ tab: 'apercu' }">
+    <section class="section">
+        <div class="flex items-center gap-4 px-4 py-4">
+            <crest team="t" size="xl" />
+            <div class="min-w-0 flex-1">
+                <h1 class="text-[26px] leading-tight">@t.Name</h1>
+                <p class="mt-0.5 text-[13.5px] text-ink-2">
+                    @string.Join(" · ", new[] { Model.Neighborhood, Model.Zone is null ? null : $"Zone {Model.Zone}", Model.FoundedYear is { } y ? $"fondée en {y}" : null }.Where(x => x is not null))
+                </p>
+                @if (Model.Form.Count > 0)
+                {
+                    <span class="form mt-2" aria-label="Forme : @string.Join(", ", Model.Form.Select(Display.FormTitle))">
+                        @foreach (var f in Model.Form) { <span class="@Display.FormClass(f)" aria-hidden="true">@f</span> }
+                    </span>
+                }
+            </div>
+            <partial name="_FollowButton" model="t" />
+        </div>
+        <div class="tabs !border-t !border-line" role="tablist">
+            <button class="tab" role="tab" :aria-selected="tab === 'apercu'" @@click="tab = 'apercu'" aria-selected="true">Aperçu</button>
+            <button class="tab" role="tab" :aria-selected="tab === 'matchs'" @@click="tab = 'matchs'" aria-selected="false">Matchs</button>
+            <button class="tab" role="tab" :aria-selected="tab === 'effectif'" @@click="tab = 'effectif'" aria-selected="false">Effectif</button>
+            <button class="tab" role="tab" :aria-selected="tab === 'stats'" @@click="tab = 'stats'" aria-selected="false">Stats</button>
+        </div>
+    </section>
+
+    <!-- Aperçu -->
+    <div x-show="tab === 'apercu'" class="grid gap-3 md:grid-cols-[minmax(0,1fr)_320px] md:items-start">
+        <div class="min-w-0">
+            @if (Model.Upcoming.FirstOrDefault() is { } next)
+            {
+                <section class="section">
+                    <header class="section-head"><span>@(next.IsLive ? "En direct" : "Prochain match")</span><span class="sub">@next.Competition · @next.Stage</span></header>
+                    <partial name="Components/_MatchRow" model="next" view-data="wide" />
+                    @if (!next.IsLive && next.KickoffAt is { } k)
+                    {
+                        <p class="border-t border-line px-4 py-2 text-[13px] text-ink-2">@KokoraTime.Long(k)@(next.Stadium is null ? "" : $" · {next.Stadium}")</p>
+                    }
+                </section>
+            }
+            <section class="section">
+                <header class="section-head"><span>Derniers résultats</span></header>
+                @if (Model.Results.Count == 0) { <div class="empty !py-6">Aucun match joué cette saison.</div> }
+                @foreach (var r in Model.Results.Take(5)) { <partial name="Components/_MatchRow" model="r" view-data="wide" /> }
+            </section>
+            @foreach (var (title, url, table) in Model.Standings)
+            {
+                <section class="section">
+                    <header class="section-head"><span class="truncate">@title</span><a href="@url" class="ml-auto whitespace-nowrap text-[13px] font-semibold text-brand">Classement</a></header>
+                    <partial name="Components/_StandingsTable" model="table with { Compact = true }" />
+                </section>
+            }
+        </div>
+        <div class="grid gap-3">
+            @if (Model.Suspended.Count > 0)
+            {
+                <section class="section">
+                    <header class="section-head"><span class="text-loss">Suspendus</span></header>
+                    <partial name="_SuspensionList" model="Model.Suspended" />
+                </section>
+            }
+            <section class="section">
+                <header class="section-head"><span>Meilleurs joueurs</span><span class="sub">buts + passes</span></header>
+                @if (Model.Scorers.Count == 0) { <div class="empty !py-6">Aucun but enregistré.</div> }
+                @foreach (var sc in Model.Scorers)
+                {
+                    <a href="@sc.Player.Url" class="row">
+                        <span class="min-w-0 flex-1 truncate font-medium">@sc.Player.Name</span>
+                        <span class="num text-[13px] text-ink-2">@sc.Goals b · @sc.Assists p</span>
+                    </a>
+                }
+            </section>
+        </div>
+    </div>
+
+    <!-- Matchs -->
+    <div x-show="tab === 'matchs'" x-cloak>
+        <section class="section">
+            <header class="section-head"><span>À venir</span><span class="sub">@Model.Upcoming.Count</span></header>
+            @if (Model.Upcoming.Count == 0) { <div class="empty !py-6">Aucun match programmé.</div> }
+            @foreach (var r in Model.Upcoming)
+            {
+                <div class="border-b border-line last:border-b-0">
+                    <div class="px-4 pt-2 text-[12px] text-ink-3">@(r.KickoffAt is { } k ? KokoraTime.Day(DateOnly.FromDateTime(KokoraTime.ToLocal(k).DateTime)) : "Date à fixer") · @r.Competition · @r.Stage</div>
+                    <div class="[&>.match]:border-0"><partial name="Components/_MatchRow" model="r" view-data="wide" /></div>
+                </div>
+            }
+        </section>
+        <section class="section">
+            <header class="section-head"><span>Résultats</span><span class="sub">@Model.Results.Count</span></header>
+            @if (Model.Results.Count == 0) { <div class="empty !py-6">Aucun match joué.</div> }
+            @foreach (var r in Model.Results)
+            {
+                <div class="border-b border-line last:border-b-0">
+                    <div class="px-4 pt-2 text-[12px] text-ink-3">@(r.KickoffAt is { } k ? KokoraTime.Day(DateOnly.FromDateTime(KokoraTime.ToLocal(k).DateTime)) : "") · @r.Competition · @r.Stage</div>
+                    <div class="[&>.match]:border-0"><partial name="Components/_MatchRow" model="r" view-data="wide" /></div>
+                </div>
+            }
+        </section>
+    </div>
+
+    <!-- Effectif -->
+    <div x-show="tab === 'effectif'" x-cloak>
+        @if (Model.Squad.Count == 0)
+        {
+            <section class="section"><div class="empty"><strong>Effectif non publié</strong>La liste des joueurs de @(Model.SeasonName ?? "la saison") n'a pas encore été saisie.</div></section>
+        }
+        @foreach (var g in byPosition)
+        {
+            <section class="section">
+                <header class="section-head"><span>@PositionLabel(g.Key)</span><span class="sub">@g.Count()</span></header>
+                <div class="grid sm:grid-cols-2">
+                    @foreach (var p in g)
+                    {
+                        <a href="@p.Url" class="row sm:odd:border-r sm:odd:border-line">
+                            <span class="score w-7 text-right text-[18px] text-ink-3">@p.Number</span>
+                            <span class="grid h-9 w-9 flex-none place-items-center overflow-hidden rounded-full bg-surface-2 text-ink-3">
+                                @if (p.PhotoUrl is not null) { <img src="@p.PhotoUrl" alt="" width="36" height="36" loading="lazy" class="h-full w-full object-cover" data-photo> }
+                                else { <icon name="user-round" /> }
+                            </span>
+                            <span class="min-w-0 flex-1 truncate font-medium">@p.Name</span>
+                        </a>
+                    }
+                </div>
+            </section>
+        }
+    </div>
+
+    <!-- Stats -->
+    <div x-show="tab === 'stats'" x-cloak class="grid gap-3">
+        @if (Model.Totals is { } totals)
+        {
+            <section class="section">
+                <div class="grid grid-cols-3 sm:grid-cols-6">
+                    @foreach (var (label, value) in new (string, int)[] { ("Matchs", totals.Played), ("Buts marqués", totals.GoalsFor), ("Buts encaissés", totals.GoalsAgainst),
+                        ("Clean sheets", totals.CleanSheets), ("Jaunes", totals.Yellow), ("Rouges", totals.Red + totals.SecondYellow) })
+                    {
+                        <div class="stat border-b border-r border-line"><div class="label">@label</div><div class="v mt-1">@value</div></div>
+                    }
+                </div>
+            </section>
+        }
+        @if (chronological.Count > 1)
+        {
+            <section class="section">
+                <header class="section-head"><span>Buts par match</span><span class="sub">du plus ancien au plus récent</span></header>
+                <div class="h-56 p-3"><canvas data-chart="goals" data-values='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(chart))' aria-label="Buts marqués et encaissés par match" role="img"></canvas></div>
+            </section>
+        }
+        else
+        {
+            <section class="section"><div class="empty !py-6">Les statistiques apparaîtront après quelques matchs.</div></section>
+        }
+    </div>
+</div>

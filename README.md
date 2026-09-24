@@ -2,7 +2,7 @@
 
 Résultats, classements, buteurs et matchs en direct du navétane de Nguékokh (zonales 5A et 5B, 4 Grandes, Coupe du Maire).
 
-> Projet en cours : phases 1 (architecture, design system), 2 (administration) et 3 (partie publique) terminées.
+> Projet en cours : phases 1 (architecture, design system), 2 (administration), 3 (partie publique) et 4 (statistiques, équipes, joueurs) terminées.
 > Ce README sera complété au fil des phases (déploiement, sauvegardes, Docker).
 
 ## Pile technique
@@ -92,7 +92,8 @@ Parcours type d'une saison :
 5. **Phase finale / 4 Grandes / Coupe** : « Créer le tableau » (2 à 32 équipes) ; les tours sont reliés, chaque vainqueur passe automatiquement au tour suivant.
 6. **Calendrier** : ajuster dates, stades et arbitres ; reporter un match en un clic ; cocher « Match à l'affiche » pour le compte à rebours de l'accueil.
 7. **Résultat** (depuis le calendrier ou le tableau de bord « Résultats à saisir ») : score, mi-temps, tirs au but, forfait (score administratif automatique), buteurs, passeurs et cartons. Les classements sont recalculés aussitôt et le vainqueur d'un match à élimination passe au tour suivant.
-8. **Qualification** (page d'une phase à élimination) : pour chaque place du premier tour, choisir « 1er de la Poule A », « Vainqueur Demi-finales 2 »… puis « Générer la qualification ». Une équipe choisie à la main sur un match reste prioritaire.
+8. **Discipline** : suspensions calculées automatiquement d'après les cartons ; ajouter les décisions de la commission (suspension supplémentaire, pénalité ou bonus de points). Classements recalculés aussitôt.
+9. **Qualification** (page d'une phase à élimination) : pour chaque place du premier tour, choisir « 1er de la Poule A », « Vainqueur Demi-finales 2 »… puis « Générer la qualification ». Une équipe choisie à la main sur un match reste prioritaire.
 
 Toutes les modifications sont tracées dans le **journal d'audit** (qui, quand, valeurs avant/après).
 
@@ -103,6 +104,10 @@ Toutes les modifications sont tracées dans le **journal d'audit** (qui, quand, 
 - `/` : matchs par jour (bande de dates), à venir, résultats ; bloc « En direct » rafraîchi toutes les 30 s ; équipes suivies en premier.
 - `/matchs/{id}-{equipes}` : fiche match (chronologie, compositions, stats, confrontations), partage WhatsApp, aperçu Open Graph.
 - `/classements/{competition}` : tableaux par poule (forme, zones qualificatives, pénalités) et tableau final.
+- `/stats` : buteurs, passeurs, gestes décisifs, meilleures attaques et défenses, clean sheets, fair-play, suspendus et joueurs menacés (par compétition ou toute la saison).
+- `/equipes`, `/equipes/{asc}` : fiche équipe (prochain match, résultats, classement, effectif, graphique des buts) avec bouton « Suivre ».
+- `/joueurs/{joueur}` : fiche joueur (matchs, buts, passes, cartons, suspension en cours).
+- `/recherche` : recherche instantanée d'équipes et de joueurs, insensible aux accents.
 - Le choix de compétition est mémorisé (cookie `k-comp`). Classements mis en cache mémoire, invalidés à chaque résultat.
 
 ## Développement
@@ -120,7 +125,10 @@ Toutes les modifications sont tracées dans le **journal d'audit** (qui, quand, 
   - `Kokora.Web.Tests` : application complète sur PostgreSQL. Les bases `kokora_tests` et `kokora_tests_services` sont **recréées à chaque exécution** (jamais la base `kokora`). Connexion : variable `KOKORA_TEST_CONNECTION`, sinon le user-secret du projet Web.
   - Relecture visuelle de l'admin sans se connecter : `KOKORA_SNAPSHOTS=1 dotnet test tests/Kokora.Web.Tests --filter Write_admin_snapshots`, puis ouvrir `http://localhost:5099/_snapshots/dashboard.html` (dossier ignoré par Git).
 
-## Règles par défaut (modifiables par compétition dans l'admin)
+## Règles par défaut
+
+Suspensions automatiques : chaque suspension se purge sur les matchs suivants de l'équipe (un forfait compte comme un match joué). Les deux jaunes d'une exclusion ne s'ajoutent pas au cumul ; le compteur de jaunes repart à zéro après une suspension.
+ (modifiables par compétition dans l'admin)
 
 - Victoire 3 pts, nul 1, défaite 0 ; forfait : défaite 0 pt et score de 3-0 pour l'adversaire.
 - Départage : points, différence de buts, buts marqués, confrontation directe, fair-play.

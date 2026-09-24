@@ -19,10 +19,13 @@ public static class DependencyInjection
         services.AddScoped<DashboardService>();
         services.AddScoped<ResultService>();
         services.AddScoped<QualificationService>();
+        services.AddScoped<DisciplineAdminService>();
 
         services.AddSingleton<CompetitionCache>();
         services.AddScoped<StandingsService>();
         services.AddScoped<MatchQueryService>();
+        services.AddScoped<StatsService>();
+        services.AddScoped<DirectoryService>();
         return services;
     }
 }

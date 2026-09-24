@@ -1,0 +1,44 @@
+@model SearchResults
+@{
+    var q = Context.Request.Query["q"].ToString().Trim();
+}
+@if (q.Length < 2)
+{
+    <p class="px-4 py-6 text-center text-[14px] text-ink-3">Tapez au moins deux lettres. Les accents ne comptent pas : « ndeye » trouve « Ndèye ».</p>
+}
+else if (Model.Teams.Count == 0 && Model.Players.Count == 0)
+{
+    <section class="section"><div class="empty"><strong>Aucun résultat</strong>Rien ne correspond à « @q ».</div></section>
+}
+else
+{
+    @if (Model.Teams.Count > 0)
+    {
+        <section class="section">
+            <header class="section-head"><span>Équipes</span><span class="sub">@Model.Teams.Count</span></header>
+            @foreach (var t in Model.Teams)
+            {
+                <a href="@t.Url" class="row"><crest team="t" /><span class="flex-1 truncate font-medium">@t.Name</span><icon name="chevron-right" class="text-ink-3" /></a>
+            }
+        </section>
+    }
+    @if (Model.Players.Count > 0)
+    {
+        <section class="section">
+            <header class="section-head"><span>Joueurs</span><span class="sub">@Model.Players.Count</span></header>
+            @foreach (var (p, t) in Model.Players)
+            {
+                <a href="@p.Url" class="row">
+                    <span class="grid h-9 w-9 flex-none place-items-center overflow-hidden rounded-full bg-surface-2 text-ink-3">
+                        @if (p.PhotoUrl is not null) { <img src="@p.PhotoUrl" alt="" width="36" height="36" loading="lazy" class="h-full w-full object-cover" data-photo> }
+                        else { <icon name="user-round" /> }
+                    </span>
+                    <span class="min-w-0 flex-1">
+                        <span class="block truncate font-medium">@p.Name</span>
+                        <span class="block truncate text-[12.5px] text-ink-3">@(t?.Name ?? "Sans équipe cette saison")@(p.Number is { } n ? $" · n° {n}" : "")</span>
+                    </span>
+                </a>
+            }
+        </section>
+    }
+}

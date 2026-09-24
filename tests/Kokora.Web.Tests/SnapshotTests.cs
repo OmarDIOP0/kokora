@@ -33,7 +33,7 @@ public class SnapshotTests(DemoDataFixture fx)
             ["equipe"] = $"/admin/equipes/{ids.Club}/modifier", ["joueurs"] = "/admin/joueurs", ["joueur-nouveau"] = "/admin/joueurs/nouveau",
             ["import"] = "/admin/joueurs/import", ["lieux"] = "/admin/lieux", ["matchs"] = "/admin/matchs",
             ["match"] = $"/admin/matchs/{ids.Match}/modifier", ["match-nouveau"] = "/admin/matchs/nouveau", ["demo"] = "/admin/demo",
-            ["audit"] = "/admin/audit",
+            ["audit"] = "/admin/audit", ["discipline"] = "/admin/discipline",
         };
 
         var dir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../src/Kokora.Web/wwwroot/_snapshots"));
@@ -51,7 +51,8 @@ public class SnapshotTests(DemoDataFixture fx)
             ["public-accueil"] = "/?c=toutes", ["public-hier"] = $"/?date={yesterday:yyyy-MM-dd}&c=toutes",
             ["public-resultats"] = "/?vue=resultats&c=toutes", ["public-a-venir"] = "/?vue=a-venir&c=toutes",
             ["public-classement-5b"] = "/classements/zonale-5b", ["public-tableau"] = "/classements/4-grandes-zone-5a",
-            ["public-plus"] = "/plus",
+            ["public-plus"] = "/plus", ["public-stats"] = "/stats?c=toutes", ["public-equipes"] = "/equipes",
+            ["public-equipe"] = "/equipes/asc-demo-5", ["public-recherche"] = "/recherche?q=demo%201",
         };
         var anonymous = fx.Factory.CreateClient(); // suit les redirections (adresse canonique des matchs)
         foreach (var (name, url) in publicPages)
@@ -60,5 +61,8 @@ public class SnapshotTests(DemoDataFixture fx)
         var regular = await fx.QueryAsync(db => db.Matches.Where(m => m.IsDemo && m.Status == MatchStatus.Finished && m.GroupId != null
             && m.Events.Count >= 3).Select(m => m.Id).FirstAsync());
         await File.WriteAllTextAsync(Path.Combine(dir, "public-match-poule.html"), await anonymous.GetStringAsync($"/matchs/{regular}"));
+        var scorer = await fx.QueryAsync(db => db.MatchEvents.Where(e => e.IsDemo && e.Type == Kokora.Domain.Enums.MatchEventType.Goal)
+            .GroupBy(e => e.Player!.Slug).OrderByDescending(g => g.Count()).Select(g => g.Key).FirstAsync());
+        await File.WriteAllTextAsync(Path.Combine(dir, "public-joueur.html"), await anonymous.GetStringAsync($"/joueurs/{scorer}"));
     }
 }

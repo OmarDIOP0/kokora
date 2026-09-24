@@ -319,7 +319,8 @@
   /* Variante compacte (colonne latérale, accueil mobile) : largeurs fixes, le nom est tronqué */
   .standings.compact { table-layout: fixed; }
   .standings.compact th:not(.team):not(.pos) { width: 46px; }
-  .standings.compact .pos, .standings.compact .team { position: static; }
+  .standings.compact .pos { position: relative; left: auto; }
+  .standings.compact .team { position: static; }
   .standings.compact .team { width: auto; min-width: 0; max-width: none; }
   .standings.compact .team::after { display: none; }
   .standings .pts { font-weight: 700; font-family: var(--font-display); font-size: 16px; }

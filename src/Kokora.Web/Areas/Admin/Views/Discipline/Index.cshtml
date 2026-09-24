@@ -1,0 +1,99 @@
+@model Kokora.Web.Areas.Admin.Controllers.DisciplinePageVm
+@{
+    ViewData["Title"] = "Discipline";
+}
+
+<div class="page-head">
+    <div>
+        <p class="label">Saison</p>
+        <h1>Discipline et sanctions</h1>
+        <p class="mt-1 max-w-[64ch] text-[14px] text-ink-2">
+            Les suspensions sont calculées automatiquement d'après les cartons (règles de chaque compétition).
+            Ajoutez ici les décisions de la commission : suspensions supplémentaires et pénalités de points.
+        </p>
+    </div>
+</div>
+
+<div class="grid gap-3 lg:grid-cols-2 lg:items-start">
+    <div class="grid gap-3">
+        <section class="section">
+            <header class="section-head"><span>Suspendus actuellement</span><span class="sub">@Model.Active.Count</span></header>
+            @if (Model.Active.Count == 0) { <div class="empty !py-6">Aucun joueur suspendu.</div> }
+            @foreach (var s in Model.Active)
+            {
+                <div class="row !items-start">
+                    <crest team="s.Team" />
+                    <div class="min-w-0 flex-1">
+                        <div class="truncate font-semibold">@s.Player.Name <span class="font-normal text-ink-3">· @s.Team.ShortName</span></div>
+                        <div class="text-[12.5px] text-ink-2">@s.ReasonLabel · @s.Competition</div>
+                    </div>
+                    <span class="badge loss">@s.Remaining / @s.Matches</span>
+                </div>
+            }
+        </section>
+
+        <section class="section">
+            <header class="section-head"><span>Suspension décidée par la commission</span></header>
+            <form method="post" action="/admin/discipline/suspensions" novalidate>
+                <div asp-validation-summary="ModelOnly" class="error-summary mx-4 mt-4"></div>
+                <div class="form-grid cols-2">
+                    <k-field asp-for="NewSuspension.PlayerId" items="Model.Players" empty="Choisir un joueur" search="true" class="span-2" />
+                    <k-field asp-for="NewSuspension.CompetitionId" items="Model.Competitions" empty="Choisir" />
+                    <k-field asp-for="NewSuspension.Matches" inputmode="numeric" />
+                    <k-field asp-for="NewSuspension.Reason" class="span-2" placeholder="Ex. Agression d'un arbitre" />
+                    <k-field asp-for="NewSuspension.DecidedOn" type="date" hint="La suspension se purge sur les matchs de l'équipe après cette date." />
+                </div>
+                <div class="form-actions"><button class="btn btn-primary btn-sm">Enregistrer la suspension</button></div>
+            </form>
+            @if (Model.Manual.Count > 0)
+            {
+                <ul class="border-t border-line">
+                    @foreach (var m in Model.Manual)
+                    {
+                        <li class="row">
+                            <div class="min-w-0 flex-1">
+                                <div class="truncate font-medium">@m.Player <span class="text-ink-3">· @m.Club</span></div>
+                                <div class="text-[12.5px] text-ink-3">@m.Matches match@(m.Matches > 1 ? "s" : "") · @m.Competition · @m.Reason · @m.DecidedOn.ToString("dd/MM/yyyy")</div>
+                            </div>
+                            <form method="post" action="/admin/discipline/suspensions/@m.Id/supprimer" data-confirm="Supprimer cette suspension ?">
+                                <button class="btn btn-ghost btn-icon" aria-label="Supprimer"><icon name="trash-2" /></button>
+                            </form>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    </div>
+
+    <section class="section">
+        <header class="section-head"><span>Pénalités (ou bonus) de points</span></header>
+        <form method="post" action="/admin/discipline/penalites" novalidate>
+            <div class="form-grid cols-2">
+                <k-field asp-for="NewAdjustment.GroupId" items="Model.Groups" empty="Choisir la poule" class="span-2" />
+                <k-field asp-for="NewAdjustment.ClubId" items="Model.Clubs" empty="Choisir l'équipe" search="true" class="span-2" />
+                <k-field asp-for="NewAdjustment.Points" inputmode="numeric" />
+                <k-field asp-for="NewAdjustment.DecidedOn" type="date" />
+                <k-field asp-for="NewAdjustment.Reason" class="span-2" placeholder="Ex. Joueur non qualifié aligné" />
+            </div>
+            <div class="form-actions"><button class="btn btn-primary btn-sm">Appliquer</button></div>
+        </form>
+        @if (Model.Adjustments.Count > 0)
+        {
+            <ul class="border-t border-line">
+                @foreach (var a in Model.Adjustments)
+                {
+                    <li class="row">
+                        <span class="score w-10 text-[20px] @(a.Points < 0 ? "text-loss" : "text-win")">@Kokora.Web.Models.Display.Signed(a.Points)</span>
+                        <div class="min-w-0 flex-1">
+                            <div class="truncate font-medium">@a.Club</div>
+                            <div class="text-[12.5px] text-ink-3">@a.Competition · @a.Group · @a.Reason · @a.DecidedOn.ToString("dd/MM/yyyy")</div>
+                        </div>
+                        <form method="post" action="/admin/discipline/penalites/@a.Id/supprimer" data-confirm="Annuler cette pénalité ?">
+                            <button class="btn btn-ghost btn-icon" aria-label="Supprimer"><icon name="trash-2" /></button>
+                        </form>
+                    </li>
+                }
+            </ul>
+        }
+    </section>
+</div>

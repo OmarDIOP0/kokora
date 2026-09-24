@@ -1,0 +1,119 @@
+@model Kokora.Web.Controllers.StatsPageVm
+@{
+    var ctx = Model.Ctx;
+    var d = Model.Data;
+    var scope = ctx.Selected?.Name ?? "Toutes les compétitions";
+    ViewData["Title"] = ctx.Selected is null ? "Statistiques" : $"Statistiques {ctx.Selected.Name}";
+    ViewData["Description"] = $"Buteurs, passeurs, meilleures attaques et défenses, fair-play et suspensions : {scope}, navétane de Nguékokh.";
+    List<TeamStatRow> Teams(Func<IEnumerable<TeamStatRow>, IEnumerable<TeamStatRow>> sort) => sort((d?.Teams ?? []).Where(t => t.Played > 0)).Take(8).ToList();
+}
+@section SubHeader {
+    <div class="border-b border-line bg-surface">
+        <div class="mx-auto max-w-[1280px] md:px-2">
+            <partial name="Components/_CompetitionBar" view-data='new ViewDataDictionary(ViewData) { ["Ctx"] = ctx, ["Base"] = "/stats" }' />
+        </div>
+    </div>
+}
+
+<div class="mx-auto max-w-[960px]" x-data="{ tab: (location.hash || '#joueurs').slice(1) }" @@hashchange.window="tab = (location.hash || '#joueurs').slice(1)">
+    <div class="page-head !pb-3">
+        <div>
+            <p class="label">@ctx.Season?.Name</p>
+            <h1 class="text-[28px]">Statistiques</h1>
+            <p class="mt-1 text-[14px] text-ink-2">
+                @scope@if (d is not null && d.MatchesPlayed > 0) {<text> · @d.MatchesPlayed matchs · @d.Goals buts (@((d.Goals / (double)d.MatchesPlayed).ToString("0.0", KokoraTime.Fr)) par match)</text>}
+            </p>
+        </div>
+        <nav class="segmented" aria-label="Catégorie">
+            <a href="#joueurs" :class="tab === 'joueurs' && 'is-active'" :aria-current="tab === 'joueurs' ? 'page' : null">Joueurs</a>
+            <a href="#equipes" :class="tab === 'equipes' && 'is-active'" :aria-current="tab === 'equipes' ? 'page' : null">Équipes</a>
+            <a href="#discipline" :class="tab === 'discipline' && 'is-active'" :aria-current="tab === 'discipline' ? 'page' : null">Discipline</a>
+        </nav>
+    </div>
+
+    @if (d is null)
+    {
+        <section class="section"><div class="empty"><strong>Pas encore de statistiques</strong>La saison n'a pas commencé.</div></section>
+        return;
+    }
+
+    <!-- Joueurs -->
+    <div x-show="tab === 'joueurs'" class="grid gap-3 md:grid-cols-2 md:items-start">
+        <div class="md:row-span-2">
+            <partial name="_PlayerRanking" model="d.Scorers" view-data='new ViewDataDictionary(ViewData) { ["Metric"] = "goals", ["Title"] = "Buteurs", ["Empty"] = "Aucun but enregistré avec son buteur." }' />
+        </div>
+        <partial name="_PlayerRanking" model="d.Assists" view-data='new ViewDataDictionary(ViewData) { ["Metric"] = "assists", ["Title"] = "Passeurs décisifs", ["Empty"] = "Aucune passe décisive enregistrée." }' />
+        <partial name="_PlayerRanking" model="d.Contributions" view-data='new ViewDataDictionary(ViewData) { ["Metric"] = "contrib", ["Title"] = "Gestes décisifs (buts + passes)" }' />
+    </div>
+
+    <!-- Équipes -->
+    <div x-show="tab === 'equipes'" x-cloak class="grid gap-3 md:grid-cols-3 md:items-start">
+        @foreach (var (title, rows, value, suffix) in new (string, List<TeamStatRow>, Func<TeamStatRow, int>, string)[]
+        {
+            ("Meilleure attaque", Teams(t => t.OrderByDescending(x => x.GoalsFor).ThenBy(x => x.Played)), t => t.GoalsFor, "buts marqués"),
+            ("Meilleure défense", Teams(t => t.OrderBy(x => x.GoalsAgainst).ThenByDescending(x => x.Played)), t => t.GoalsAgainst, "buts encaissés"),
+            ("Clean sheets", Teams(t => t.OrderByDescending(x => x.CleanSheets).ThenBy(x => x.GoalsAgainst)), t => t.CleanSheets, "matchs sans encaisser"),
+        })
+        {
+            <section class="section">
+                <header class="section-head"><span>@title</span></header>
+                @if (rows.Count == 0) { <div class="empty !py-6">Aucun match joué.</div> }
+                @foreach (var (t, i) in rows.Select((t, i) => (t, i + 1)))
+                {
+                    <a href="@t.Team.Url" class="row">
+                        <span class="num w-4 text-right text-[13px] text-ink-3">@i</span>
+                        <crest team="t.Team" />
+                        <span class="min-w-0 flex-1">
+                            <span class="block truncate font-medium">@t.Team.Name</span>
+                            <span class="block text-[12px] text-ink-3">@t.Played match@(t.Played > 1 ? "s" : "")</span>
+                        </span>
+                        <span class="score text-[20px]" title="@suffix">@value(t)</span>
+                    </a>
+                }
+            </section>
+        }
+    </div>
+
+    <!-- Discipline -->
+    <div x-show="tab === 'discipline'" x-cloak class="grid gap-3 md:grid-cols-2 md:items-start">
+        <div class="grid gap-3">
+            <section class="section">
+                <header class="section-head"><span>Joueurs suspendus</span><span class="sub">@d.Suspended.Count</span></header>
+                <partial name="_SuspensionList" model="d.Suspended" />
+                <p class="border-t border-line px-4 py-2.5 text-[12.5px] text-ink-3">Calcul automatique d'après les cartons saisis et les décisions de la commission. Seule la commission fait foi.</p>
+            </section>
+            <section class="section">
+                <header class="section-head"><span>À un carton de la suspension</span><span class="sub">@d.Threatened.Count</span></header>
+                @if (d.Threatened.Count == 0) { <div class="empty !py-6">Personne pour l'instant.</div> }
+                @foreach (var t in d.Threatened)
+                {
+                    <a href="@t.Player.Url" class="row">
+                        <crest team="t.Team" />
+                        <span class="min-w-0 flex-1 truncate"><span class="font-semibold">@t.Player.Name</span> <span class="text-ink-3">· @t.Team.ShortName · @t.Competition</span></span>
+                        <span class="flex gap-0.5" aria-label="@t.Yellows cartons jaunes sur @t.Threshold">
+                            @for (var k = 0; k < t.Threshold; k++) { <span class="card-icon @(k < t.Yellows ? "yellow" : "bg-line-strong")"></span> }
+                        </span>
+                    </a>
+                }
+            </section>
+        </div>
+        <section class="section">
+            <header class="section-head"><span>Classement fair-play</span><span class="sub">moins de points = plus fair-play</span></header>
+            <table class="list">
+                <thead><tr><th>#</th><th>Équipe</th><th class="!text-center"><span class="card-icon yellow inline-block" title="Jaunes"></span></th><th class="!text-center"><span class="card-icon red inline-block" title="Rouges et 2e jaunes"></span></th><th class="!text-right">Pts</th></tr></thead>
+                <tbody>
+                    @foreach (var (t, i) in (d.Teams).OrderBy(t => t.DisciplinePoints).ThenByDescending(t => t.Played).Select((t, i) => (t, i + 1)))
+                    {
+                        <tr>
+                            <td class="num w-6 text-ink-3">@i</td>
+                            <td><a href="@t.Team.Url" class="flex items-center gap-2"><crest team="t.Team" /><span class="truncate">@t.Team.Name</span></a></td>
+                            <td class="num text-center">@t.Yellow</td>
+                            <td class="num text-center">@(t.Red + t.SecondYellow)</td>
+                            <td class="score text-right text-[17px]">@t.DisciplinePoints</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    </div>
+</div>

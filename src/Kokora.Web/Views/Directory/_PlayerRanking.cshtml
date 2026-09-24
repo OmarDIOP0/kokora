@@ -1,0 +1,54 @@
+@model IReadOnlyList<PlayerStatRow>
+@* Classement de joueurs. ViewData : "Metric" = goals | assists | contrib, "Title", "Empty". *@
+@{
+    var metric = ViewData["Metric"] as string ?? "goals";
+    const int Top = 10;
+    int Value(PlayerStatRow r) => metric switch { "assists" => r.Assists, "contrib" => r.Contributions, _ => r.Goals };
+    string Detail(PlayerStatRow r) => metric switch
+    {
+        "contrib" => $"{r.Goals} but{(r.Goals > 1 ? "s" : "")} · {r.Assists} passe{(r.Assists > 1 ? "s" : "")}",
+        "goals" when r.Penalties > 0 => $"dont {r.Penalties} pén.",
+        _ => ""
+    };
+    var rank = 0; var previous = -1; var i = 0;
+}
+<section class="section" x-data="{ all: false }">
+    <header class="section-head"><span>@ViewData["Title"]</span></header>
+    @if (Model.Count == 0)
+    {
+        <div class="empty !py-6">@(ViewData["Empty"] ?? "Aucune donnée pour l'instant.")</div>
+    }
+    <ol>
+        @foreach (var r in Model)
+        {
+            i++;
+            var v = Value(r);
+            if (v != previous) { rank = i; previous = v; }
+            <li x-show="all || @(i <= Top ? "true" : "false")" @(i > Top ? "x-cloak" : "")>
+                <a href="@r.Player.Url" class="row !gap-3">
+                    <span class="num w-5 text-right text-[13px] text-ink-3">@rank</span>
+                    <span class="grid h-9 w-9 flex-none place-items-center overflow-hidden rounded-full bg-surface-2 text-ink-3">
+                        @if (r.Player.PhotoUrl is not null)
+                        {
+                            <img src="@r.Player.PhotoUrl" alt="" width="36" height="36" loading="lazy" class="h-full w-full object-cover" data-photo>
+                        }
+                        else if (r.Team is not null)
+                        {
+                            <crest team="r.Team" />
+                        }
+                    </span>
+                    <span class="min-w-0 flex-1">
+                        <span class="block truncate font-semibold">@r.Player.Name</span>
+                        <span class="block truncate text-[12.5px] text-ink-3">@r.Team?.Name@(Detail(r) is { Length: > 0 } d ? $" · {d}" : "")</span>
+                    </span>
+                    <span class="score text-[22px]">@v</span>
+                </a>
+            </li>
+        }
+    </ol>
+    @if (Model.Count > Top)
+    {
+        <button type="button" class="w-full border-t border-line py-3 text-[13.5px] font-semibold text-brand hover:bg-surface-2" @@click="all = !all"
+                x-text="all ? 'Voir moins' : 'Voir les @Model.Count joueurs'">Voir les @Model.Count joueurs</button>
+    }
+</section>

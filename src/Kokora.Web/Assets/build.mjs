@@ -32,6 +32,7 @@ const options = {
     core: 'Assets/js/core.js',
     design: 'Assets/js/design.js',
     admin: 'Assets/js/admin.js',
+    charts: 'Assets/js/charts.js',
   },
   absWorkingDir: root,
   outdir: 'wwwroot/dist',

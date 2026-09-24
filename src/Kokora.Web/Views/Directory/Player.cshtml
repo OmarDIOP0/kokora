@@ -1,0 +1,103 @@
+@model PlayerPageData
+@{
+    var p = Model.Player;
+    ViewData["Title"] = p.Name;
+    ViewData["Description"] = $"{p.Name}{(Model.Team is null ? "" : $" ({Model.Team.Name})")} : {Model.Goals} buts, {Model.Assists} passes décisives. Navétane de Nguékokh.";
+    string Position(PlayerPosition pos) => pos switch
+    {
+        PlayerPosition.Goalkeeper => "Gardien", PlayerPosition.Defender => "Défenseur", PlayerPosition.Midfielder => "Milieu",
+        PlayerPosition.Forward => "Attaquant", _ => "Poste non précisé"
+    };
+    int? age = Model.BirthDate is { } b ? KokoraTime.Today.Year - b.Year - (KokoraTime.Today < b.AddYears(KokoraTime.Today.Year - b.Year) ? 1 : 0) : null;
+}
+
+<div class="mx-auto max-w-[880px]">
+    <section class="section">
+        <div class="flex items-center gap-4 px-4 py-4">
+            <span class="relative grid h-20 w-20 flex-none place-items-center overflow-hidden rounded-full bg-surface-2 text-ink-3">
+                @if (p.PhotoUrl is not null)
+                {
+                    <img src="@p.PhotoUrl" alt="Photo de @p.Name" width="80" height="80" class="h-full w-full object-cover" data-photo>
+                }
+                else
+                {
+                    <icon name="user-round" class="!h-9 !w-9" />
+                }
+            </span>
+            <div class="min-w-0 flex-1">
+                <h1 class="text-[26px] leading-tight">@p.Name</h1>
+                @if (Model.Nickname is not null && Model.Nickname != Model.FullName)
+                {
+                    <p class="text-[13.5px] text-ink-2">@Model.FullName</p>
+                }
+                <p class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13.5px] text-ink-2">
+                    @if (Model.Team is not null)
+                    {
+                        <a href="@Model.Team.Url" class="inline-flex items-center gap-1.5 font-semibold text-ink hover:underline"><crest team="Model.Team" />@Model.Team.Name</a>
+                        <span class="text-ink-3">·</span>
+                    }
+                    <span>@Position(p.Position)</span>
+                    @if (p.Number is { } n) { <span class="text-ink-3">·</span><span class="num">n° @n</span> }
+                    @if (age is { } a) { <span class="text-ink-3">·</span><span>@a ans</span> }
+                </p>
+            </div>
+        </div>
+        <div class="grid grid-cols-3 border-t border-line sm:grid-cols-6">
+            @foreach (var (label, value, cls) in new (string, int, string)[]
+            {
+                ("Matchs", Model.Appearances, ""), ("Buts", Model.Goals, ""), ("Passes déc.", Model.Assists, ""),
+                ("Penaltys", Model.Penalties, ""), ("Jaunes", Model.Yellow, ""), ("Rouges", Model.Red, Model.Red > 0 ? "text-loss" : "")
+            })
+            {
+                <div class="stat border-b border-r border-line"><div class="label">@label</div><div class="v mt-1 @cls">@value</div></div>
+            }
+        </div>
+        <p class="px-4 py-2 text-[12px] text-ink-3">« Matchs » : rencontres où le joueur figure sur la feuille de match ou a été décisif.</p>
+    </section>
+
+    @foreach (var s in Model.Suspensions)
+    {
+        <section class="section">
+            <div class="notice !border-0 !bg-[color-mix(in_srgb,var(--loss)_10%,transparent)]">
+                <span class="card-icon red"></span>
+                <span><strong class="text-loss">Suspendu</strong> · @s.ReasonLabel (@s.Competition) · encore @s.Remaining match@(s.Remaining > 1 ? "s" : "")</span>
+            </div>
+        </section>
+    }
+
+    @if (Model.ByCompetition.Count > 1)
+    {
+        <section class="section">
+            <header class="section-head"><span>Par compétition</span></header>
+            <table class="list">
+                <thead><tr><th>Compétition</th><th class="!text-center">Buts</th><th class="!text-center">Passes</th><th class="!text-center">J</th><th class="!text-center">R</th></tr></thead>
+                <tbody>
+                    @foreach (var c in Model.ByCompetition)
+                    {
+                        <tr><td>@c.Competition</td><td class="num text-center">@c.Goals</td><td class="num text-center">@c.Assists</td><td class="num text-center">@c.Yellow</td><td class="num text-center">@c.Red</td></tr>
+                    }
+                </tbody>
+            </table>
+        </section>
+    }
+
+    <section class="section">
+        <header class="section-head"><span>Matchs</span><span class="sub">@Model.Matches.Count</span></header>
+        @if (Model.Matches.Count == 0) { <div class="empty !py-6">Aucun match enregistré pour ce joueur.</div> }
+        @foreach (var line in Model.Matches)
+        {
+            <div class="border-b border-line last:border-b-0">
+                <div class="flex items-center gap-2 px-4 pt-2 text-[12px] text-ink-3">
+                    <span class="truncate">@(line.Match.KickoffAt is { } k ? KokoraTime.ToLocal(k).ToString("d MMM", KokoraTime.Fr) : "") · @line.Match.Competition</span>
+                    <span class="ml-auto flex items-center gap-1.5 whitespace-nowrap text-ink-2">
+                        @for (var g = 0; g < line.Goals; g++) { <icon name="volleyball" label="But" /> }
+                        @if (line.Assists > 0) { <span class="font-semibold">@line.Assists passe@(line.Assists > 1 ? "s" : "")</span> }
+                        @if (line.Yellow) { <span class="card-icon yellow" role="img" aria-label="Carton jaune"></span> }
+                        @if (line.Red) { <span class="card-icon red" role="img" aria-label="Carton rouge"></span> }
+                    </span>
+                </div>
+                <div class="[&>.match]:border-0"><partial name="Components/_MatchRow" model="line.Match" /></div>
+            </div>
+        }
+    </section>
+</div>

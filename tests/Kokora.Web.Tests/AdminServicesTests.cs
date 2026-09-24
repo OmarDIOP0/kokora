@@ -22,6 +22,7 @@ public class ServicesFixture : IDisposable
 }
 
 public class ResultsFixture() : ServicesFixture("kokora_tests_results");
+public class DisciplineFixture() : ServicesFixture("kokora_tests_discipline");
 
 public class AdminServicesTests(ServicesFixture fx) : IClassFixture<ServicesFixture>
 {

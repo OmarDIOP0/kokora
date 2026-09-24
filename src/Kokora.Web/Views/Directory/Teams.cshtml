@@ -1,0 +1,40 @@
+@model List<(string Zone, List<(TeamVm Team, string? Neighborhood)> Teams)>
+@{
+    ViewData["Title"] = "Équipes";
+    ViewData["Description"] = "Les ASC du navétane de Nguékokh : zones 5A et 5B.";
+}
+<div class="mx-auto max-w-[880px]" x-data="{ q: '' }">
+    <div class="page-head !pb-3">
+        <div>
+            <h1 class="text-[28px]">Équipes</h1>
+            <p class="mt-1 text-[14px] text-ink-2">Touchez l'étoile d'une équipe pour la suivre : ses matchs passent en premier.</p>
+        </div>
+        <input type="search" x-model="q" class="input sm:!w-64" placeholder="Filtrer les équipes" aria-label="Filtrer les équipes">
+    </div>
+    @if (Model.Count == 0)
+    {
+        <section class="section"><div class="empty"><strong>Aucune équipe</strong>Les ASC seront publiées avant le début de la saison.</div></section>
+    }
+    @foreach (var (zone, teams) in Model)
+    {
+        <section class="section">
+            <header class="section-head"><span>@zone</span><span class="sub">@teams.Count équipes</span></header>
+            <div class="grid sm:grid-cols-2">
+                @foreach (var (t, hood) in teams)
+                {
+                    var key = Kokora.Application.Common.Slug.From($"{t.Name} {t.ShortName} {hood}");
+                    <div class="flex items-center border-b border-line sm:odd:border-r" x-show="!q || '@key'.includes(q.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, '-'))">
+                        <a href="@t.Url" class="row !border-0 min-w-0 flex-1">
+                            <crest team="t" size="lg" />
+                            <span class="min-w-0">
+                                <span class="block truncate font-semibold">@t.Name</span>
+                                <span class="block truncate text-[13px] text-ink-3">@(hood ?? " ")</span>
+                            </span>
+                        </a>
+                        <partial name="_FollowButton" model="t" />
+                    </div>
+                }
+            </div>
+        </section>
+    }
+</div>

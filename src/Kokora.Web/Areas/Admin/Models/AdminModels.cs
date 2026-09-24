@@ -285,3 +285,13 @@ public static class ArticleLabels
         ArticleStatus.Published => "win", ArticleStatus.Scheduled => "brand", ArticleStatus.Draft => "warn", _ => ""
     };
 }
+
+// ---------------------------------------------------------------- Communauté
+
+public record CommentsPageVm(CommentStatus Status, List<Kokora.Application.Engagement.ModerationItem> Items, int Pending);
+
+public record UserItem(string Id, string DisplayName, string Login, string Role, DateTimeOffset CreatedAt, DateTimeOffset? LastSeenAt, bool Locked);
+
+public record UsersPageVm(List<UserItem> Items, int Total, string? Search, string? Role, List<SelectListItem> Roles);
+
+public record NotificationsPageVm(Kokora.Application.Engagement.PushAudience Audience, bool Enabled, List<SelectListItem> Clubs);

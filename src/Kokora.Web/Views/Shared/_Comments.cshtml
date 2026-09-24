@@ -1,0 +1,57 @@
+@model CommentsPartVm
+@{
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    var approved = Model.Items.Count(c => c.Status == CommentStatus.Approved);
+}
+<section class="section" id="comments">
+    <header class="section-head"><span>Commentaires</span><span class="sub">@approved</span></header>
+
+    @if (Model.Message is not null) { <p class="notice !rounded-none" role="status"><icon name="check" />@Model.Message</p> }
+
+    @foreach (var c in Model.Items)
+    {
+        <article class="border-b border-line px-4 py-3 last:border-b-0 @(c.Status == CommentStatus.Pending ? "bg-surface-2" : "")">
+            <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
+                <span class="grid h-7 w-7 flex-none place-items-center rounded-full bg-brand-soft font-display text-[14px] font-bold text-brand" aria-hidden="true">@(c.Author.Length > 0 ? char.ToUpper(c.Author[0]) : '?')</span>
+                <span class="whitespace-nowrap font-semibold">@c.Author</span>
+                <time class="text-ink-3" datetime="@c.At.ToString("O")" data-rel>@KokoraTime.ToLocal(c.At).ToString("d MMM", KokoraTime.Fr)</time>
+                @if (c.Status == CommentStatus.Pending) { <span class="badge warn">En attente de validation</span> }
+                @if (c.IsMine)
+                {
+                    <form hx-post="/commentaires/@c.Id/supprimer?articleId=@Model.ArticleId" hx-target="#comments" hx-swap="outerHTML"
+                          hx-confirm="Supprimer votre commentaire ?" class="ml-auto">
+                        <button class="btn btn-ghost btn-sm !min-h-8 text-ink-3">Supprimer</button>
+                    </form>
+                }
+            </div>
+            <p class="mt-1.5 whitespace-pre-line break-words text-[15px]">@c.Body</p>
+        </article>
+    }
+    @if (Model.Items.Count == 0 && Model.Allowed) { <p class="px-4 py-4 text-[14px] text-ink-3">Aucun commentaire pour l'instant.</p> }
+
+    @if (!Model.Allowed)
+    {
+        <p class="border-t border-line px-4 py-3 text-[13px] text-ink-3">Les commentaires sont fermés pour cette info.</p>
+    }
+    else if (signedIn)
+    {
+        <form hx-post="/infos/@Model.ArticleId/commentaires" hx-target="#comments" hx-swap="outerHTML"
+              action="/infos/@Model.ArticleId/commentaires" method="post" class="grid gap-2 border-t border-line p-4">
+            <label for="comment-body" class="sr-only">Votre commentaire</label>
+            <textarea id="comment-body" name="body" class="input textarea" rows="3" maxlength="1000" required
+                      placeholder="Votre commentaire (respectueux : les propos insultants sont supprimés)">@Model.Draft</textarea>
+            @if (Model.Error is not null) { <p class="text-[13px] font-medium text-loss" role="alert">@Model.Error</p> }
+            <div class="flex items-center justify-between gap-3">
+                <span class="text-[12px] text-ink-3">Relu par l'équipe avant publication.</span>
+                <button class="btn btn-primary btn-sm">Publier</button>
+            </div>
+        </form>
+    }
+    else
+    {
+        <div class="flex items-center gap-3 border-t border-line px-4 py-3">
+            <p class="min-w-0 flex-1 text-[13.5px] text-ink-2">Connectez-vous pour commenter.</p>
+            <a href="/compte/connexion?returnUrl=@Uri.EscapeDataString(Context.Request.Path + "#comments")" class="btn btn-secondary btn-sm">Se connecter</a>
+        </div>
+    }
+</section>

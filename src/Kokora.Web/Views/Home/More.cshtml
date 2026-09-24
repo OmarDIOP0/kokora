@@ -6,6 +6,7 @@
 <div class="mx-auto max-w-[640px] md:pt-2">
     <section class="section">
         <a href="/equipes" class="row"><icon name="shield" class="text-ink-2" /><span class="flex-1">Équipes</span><icon name="chevron-right" class="text-ink-3" /></a>
+        <a href="/pronostics" class="row"><icon name="target" class="text-ink-2" /><span class="flex-1">Pronostics et classement des supporters</span><icon name="chevron-right" class="text-ink-3" /></a>
         <a href="/recherche" class="row"><icon name="search" class="text-ink-2" /><span class="flex-1">Rechercher une équipe ou un joueur</span><icon name="chevron-right" class="text-ink-3" /></a>
     </section>
 
@@ -22,11 +23,13 @@
         </label>
     </section>
 
+    <partial name="_PushSettings" />
+
     <section class="section">
         <header class="section-head"><span>Compte</span></header>
         @if (User.Identity?.IsAuthenticated == true)
         {
-            <div class="row"><icon name="circle-user" class="text-ink-2" /><span class="flex-1 truncate">@User.Identity.Name</span></div>
+            <a href="/compte" class="row"><icon name="circle-user" class="text-ink-2" /><span class="flex-1 truncate">Mon compte</span><icon name="chevron-right" class="text-ink-3" /></a>
             @if (isStaff)
             {
                 <a href="/admin" class="row"><icon name="layout-dashboard" class="text-ink-2" /><span class="flex-1">Administration</span><icon name="chevron-right" class="text-ink-3" /></a>
@@ -37,7 +40,8 @@
         }
         else
         {
-            <a href="/compte/connexion" class="row"><icon name="circle-user" class="text-ink-2" /><span class="flex-1">Se connecter</span><icon name="chevron-right" class="text-ink-3" /></a>
+            <a href="/compte/connexion" class="row"><icon name="log-in" class="text-ink-2" /><span class="flex-1">Se connecter</span><icon name="chevron-right" class="text-ink-3" /></a>
+            <a href="/compte/inscription" class="row"><icon name="user-plus" class="text-ink-2" /><span class="flex-1">Créer un compte <span class="block text-[13px] text-ink-3">pronostics, homme du match, commentaires</span></span><icon name="chevron-right" class="text-ink-3" /></a>
         }
     </section>
 

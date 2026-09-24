@@ -1,0 +1,78 @@
+@model UsersPageVm
+@using Kokora.Web.Areas.Admin.Controllers
+@{
+    ViewData["Title"] = "Utilisateurs";
+    var temp = (TempData["k-temp-password"] as string)?.Split('|');
+    var me = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+}
+<div class="page-head">
+    <div>
+        <p class="label">Système</p>
+        <h1>Utilisateurs</h1>
+        <p class="mt-1 text-[14px] text-ink-2">@Model.Total compte@(Model.Total > 1 ? "s" : "")</p>
+    </div>
+</div>
+
+@if (temp is { Length: 2 })
+{
+    <div class="notice mb-3" role="alert">
+        <icon name="key-round" />
+        <span>Mot de passe temporaire de <b>@temp[0]</b> : <code class="num select-all rounded bg-surface px-1.5 py-0.5 text-[16px] font-bold">@temp[1]</code>
+            — transmettez-le à la personne (il ne sera plus affiché) et demandez-lui de le changer dans « Mon compte ».</span>
+    </div>
+}
+
+<section class="section">
+    <form method="get" class="flex flex-wrap gap-2 p-3">
+        <input type="search" name="q" value="@Model.Search" class="input min-w-0 flex-1" placeholder="Nom, e-mail ou téléphone" aria-label="Rechercher">
+        <select name="role" class="input !w-auto" aria-label="Rôle" onchange="this.form.submit()">
+            <option value="">Tous les rôles</option>
+            @foreach (var r in Kokora.Application.Abstractions.Roles.All)
+            {
+                <option value="@r" selected="@(Model.Role == r)">@UsersController.RoleLabel(r)</option>
+            }
+        </select>
+    </form>
+    <ul class="border-t border-line">
+        @foreach (var u in Model.Items)
+        {
+            <li class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line px-4 py-3 last:border-b-0">
+                <div class="min-w-0 flex-1 basis-56">
+                    <div class="flex items-center gap-2">
+                        <span class="truncate font-semibold">@u.DisplayName</span>
+                        @if (u.Role != Kokora.Application.Abstractions.Roles.User) { <span class="badge brand">@UsersController.RoleLabel(u.Role)</span> }
+                        @if (u.Locked) { <span class="badge loss">Bloqué</span> }
+                    </div>
+                    <div class="truncate text-[12.5px] text-ink-3">
+                        @u.Login · inscrit le @KokoraTime.ToLocal(u.CreatedAt).ToString("d MMM yyyy", KokoraTime.Fr)@(u.LastSeenAt is { } s ? " · vu le " + KokoraTime.ToLocal(s).ToString("d MMM", KokoraTime.Fr) : "")
+                    </div>
+                </div>
+                @if (u.Id != me)
+                {
+                    <form method="post" action="/admin/utilisateurs/@u.Id/role" class="flex items-center gap-1">
+                        <select name="role" class="input !min-h-9 !w-auto !py-0 !text-[14px]" aria-label="Rôle de @u.DisplayName" onchange="this.form.requestSubmit()">
+                            @foreach (var r in Model.Roles)
+                            {
+                                <option value="@r.Value" selected="@(r.Value == u.Role)">@r.Text</option>
+                            }
+                            @if (Model.Roles.All(r => r.Value != u.Role)) { <option value="@u.Role" selected disabled>@UsersController.RoleLabel(u.Role)</option> }
+                        </select>
+                    </form>
+                    <div class="flex gap-1" x-data="{ open: false }">
+                        <form method="post" action="/admin/utilisateurs/@u.Id/mot-de-passe" data-confirm="Générer un mot de passe temporaire pour @u.DisplayName ? L'ancien ne fonctionnera plus.">
+                            <button class="btn btn-ghost btn-sm" title="Mot de passe oublié"><icon name="key-round" /><span class="sr-only">Réinitialiser le mot de passe</span></button>
+                        </form>
+                        <form method="post" action="/admin/utilisateurs/@u.Id/blocage" data-confirm="@(u.Locked ? "Débloquer" : "Bloquer") @u.DisplayName ?">
+                            <button class="btn btn-ghost btn-sm @(u.Locked ? "" : "text-loss")">@(u.Locked ? "Débloquer" : "Bloquer")</button>
+                        </form>
+                    </div>
+                }
+                else { <span class="text-[13px] text-ink-3">C'est vous</span> }
+            </li>
+        }
+    </ul>
+    @if (Model.Total > Model.Items.Count)
+    {
+        <p class="border-t border-line px-4 py-2.5 text-[13px] text-ink-3">@Model.Items.Count premiers affichés : affinez la recherche.</p>
+    }
+</section>

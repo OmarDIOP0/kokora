@@ -31,6 +31,7 @@ public static class DependencyInjection
                 options.Password.RequiredLength = 8;
                 options.Password.RequireNonAlphanumeric = false;
                 options.Password.RequireUppercase = false;
+                options.Password.RequireLowercase = false; // un chiffre suffit (saisie facile au téléphone)
                 options.Lockout.MaxFailedAccessAttempts = 5;
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
                 options.Lockout.AllowedForNewUsers = true;
@@ -43,6 +44,13 @@ public static class DependencyInjection
         services.AddSingleton<IPlayerFileReader, Storage.PlayerFileReader>();
         services.AddSingleton<IHtmlCleaner, Content.HtmlCleaner>();
         services.AddScoped<DbInitializer>();
+        services.AddScoped<IUserDirectory, UserDirectory>();
+
+        // Notifications push : une seule instance sert à la fois de file d'envoi et de tâche de fond.
+        services.AddSingleton<Push.WebPushService>();
+        services.AddSingleton<IPushService>(sp => sp.GetRequiredService<Push.WebPushService>());
+        services.AddHostedService(sp => sp.GetRequiredService<Push.WebPushService>());
+        services.AddHostedService<Push.ScheduledNewsNotifier>();
         return services;
     }
 }

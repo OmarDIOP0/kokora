@@ -25,6 +25,8 @@ public class PushSubscription : Entity
     public bool NotifyFullTime { get; set; } = true;
     public bool NotifyNews { get; set; } = true;
     public DateTimeOffset? LastSuccessAt { get; set; }
+    /// <summary>Équipes suivies sur cet appareil (compte ou visiteur) : buts et résultats de leurs matchs.</summary>
+    public List<int> ClubIds { get; set; } = [];
 }
 
 public class Prediction : Entity

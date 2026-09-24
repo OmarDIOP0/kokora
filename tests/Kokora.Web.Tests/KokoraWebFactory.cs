@@ -55,6 +55,9 @@ public class KokoraWebFactory : WebApplicationFactory<Program>
         builder.ConfigureLogging(l => l.SetMinimumLevel(LogLevel.Warning));
         builder.ConfigureTestServices(services =>
         {
+            // Notifications : enregistrées au lieu d'être envoyées (aucun appel réseau pendant les tests).
+            services.AddSingleton<RecordingPushService>();
+            services.AddSingleton<IPushService>(sp => sp.GetRequiredService<RecordingPushService>());
             services.AddAuthentication(o =>
                 {
                     o.DefaultAuthenticateScheme = TestAuthHandler.Scheme;
@@ -103,4 +106,16 @@ public static class RolesForTests
 {
     public const string Admin = Roles.Admin;
     public const string Editor = Roles.Editor;
+    public const string User = Roles.User;
+}
+
+public class RecordingPushService : IPushService
+{
+    public string? PublicKey => "cle-de-test";
+    public List<(PushMessage Message, int[] Ids)> Sent { get; } = [];
+
+    public void Enqueue(PushMessage message, IReadOnlyCollection<int> subscriptionIds)
+    {
+        lock (Sent) Sent.Add((message, subscriptionIds.ToArray()));
+    }
 }

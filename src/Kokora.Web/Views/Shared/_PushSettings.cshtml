@@ -1,0 +1,41 @@
+@* Réglages des notifications de l'appareil (pas besoin de compte) : composant Alpine « pushSettings » (lib/push.js). *@
+<section class="section" x-data="pushSettings">
+    <header class="section-head">
+        <span>Notifications</span>
+        <span class="badge win ml-auto" x-show="state === 'on'" x-cloak>Activées</span>
+    </header>
+
+    <div class="px-4 py-3 text-[14px] text-ink-2" x-show="state === 'loading'">Vérification…</div>
+
+    <div class="px-4 py-3 text-[14px] text-ink-2" x-show="state === 'unsupported'" x-cloak>
+        Ce navigateur ne permet pas les notifications. Essayez avec Chrome ou Firefox.
+    </div>
+    <div class="px-4 py-3 text-[14px] text-ink-2" x-show="state === 'ios'" x-cloak>
+        Sur iPhone, ajoutez d'abord Kokora à l'écran d'accueil (bouton Partager, puis « Sur l'écran d'accueil »),
+        puis ouvrez-le depuis l'icône pour activer les notifications.
+    </div>
+    <div class="px-4 py-3 text-[14px] text-ink-2" x-show="state === 'denied'" x-cloak>
+        Les notifications sont bloquées pour ce site. Autorisez-les dans les réglages du navigateur (icône à gauche de l'adresse), puis revenez ici.
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3 px-4 py-3" x-show="state === 'off'" x-cloak>
+        <p class="min-w-0 flex-1 text-[14px] text-ink-2">Buts, coups d'envoi et résultats de vos équipes suivies, et infos importantes de l'organisation.</p>
+        <button type="button" class="btn btn-primary btn-sm" @@click="enable()" :disabled="busy">Activer</button>
+        <p class="w-full text-[13px] text-loss" x-show="error" x-text="error" role="alert"></p>
+    </div>
+
+    <div x-show="state === 'on'" x-cloak>
+        <label class="row cursor-pointer"><span class="flex-1">Coup d'envoi <span class="block text-[12.5px] text-ink-3">de mes équipes suivies</span></span>
+            <input type="checkbox" class="h-5 w-5 accent-[var(--brand)]" x-model="prefs.notifyKickoff" @@change="save()"></label>
+        <label class="row cursor-pointer"><span class="flex-1">Buts <span class="block text-[12.5px] text-ink-3">en direct</span></span>
+            <input type="checkbox" class="h-5 w-5 accent-[var(--brand)]" x-model="prefs.notifyGoals" @@change="save()"></label>
+        <label class="row cursor-pointer"><span class="flex-1">Résultat final</span>
+            <input type="checkbox" class="h-5 w-5 accent-[var(--brand)]" x-model="prefs.notifyFullTime" @@change="save()"></label>
+        <label class="row cursor-pointer"><span class="flex-1">Infos importantes <span class="block text-[12.5px] text-ink-3">communiqués de l'organisation</span></span>
+            <input type="checkbox" class="h-5 w-5 accent-[var(--brand)]" x-model="prefs.notifyNews" @@change="save()"></label>
+        <p class="border-t border-line px-4 py-2.5 text-[12.5px] text-ink-3">
+            Les notifications concernent les équipes suivies sur cet appareil (bouton « Suivre » sur la page d'une équipe).
+        </p>
+        <div class="px-4 pb-3"><button type="button" class="btn btn-ghost btn-sm text-loss" @@click="disable()" :disabled="busy">Désactiver sur cet appareil</button></div>
+    </div>
+</section>

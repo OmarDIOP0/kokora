@@ -1,0 +1,22 @@
+@model Kokora.Web.Controllers.RegisterInput
+@{
+    ViewData["Title"] = "Créer un compte";
+}
+<div class="mx-auto max-w-[420px] md:pt-8">
+    <section class="section">
+        <header class="section-head"><span>Créer un compte</span></header>
+        <form method="post" action="/compte/inscription" class="grid gap-4 p-4" novalidate>
+            <input type="hidden" asp-for="ReturnUrl">
+            <div asp-validation-summary="ModelOnly" class="error-summary" role="alert"></div>
+            <k-field asp-for="DisplayName" autocomplete="nickname" autofocus="true" hint="Visible dans les classements et les commentaires." />
+            <k-field asp-for="Login" autocomplete="username" hint="Numéro sénégalais (77 123 45 67) ou adresse e-mail. Jamais affiché publiquement." />
+            <k-field asp-for="Password" type="password" autocomplete="new-password" hint="8 caractères minimum, avec au moins un chiffre." />
+            <k-field asp-for="ConfirmPassword" type="password" autocomplete="new-password" />
+            <button type="submit" class="btn btn-primary w-full">Créer mon compte</button>
+        </form>
+    </section>
+    <p class="px-4 py-4 text-center text-[13px] text-ink-3">
+        Déjà inscrit ? <a href="/compte/connexion" class="font-semibold text-brand">Se connecter</a>.
+        Aucune publicité, aucune revente de données : votre numéro sert uniquement à vous connecter.
+    </p>
+</div>

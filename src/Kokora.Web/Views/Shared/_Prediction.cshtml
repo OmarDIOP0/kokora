@@ -1,0 +1,81 @@
+@model PredictionPartVm
+@{
+    var b = Model.Block;
+    var m = Model.Match;
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    var mine = b?.Mine;
+    // Répartition visible une fois son propre pronostic donné (ou le match commencé), pour ne pas influencer.
+    var showSummary = b is not null && b.Summary.Count > 0 && (mine is not null || !b.Open);
+}
+<section class="section" id="prediction-@Model.MatchId">
+    <header class="section-head">
+        <span>Pronostic</span>
+        @if (b is not null && b.Summary.Count > 0) { <span class="sub">@b.Summary.Count participant@(b.Summary.Count > 1 ? "s" : "")</span> }
+        <a href="/pronostics" class="ml-auto text-[13px] font-semibold text-brand">Classement</a>
+    </header>
+    @if (b is null || m is null)
+    {
+        <div class="empty !py-6">Pronostics indisponibles pour ce match.</div>
+    }
+    else if (b.Open && signedIn)
+    {
+        <form hx-post="/matchs/@Model.MatchId/pronostic" hx-target="#prediction-@Model.MatchId" hx-swap="outerHTML"
+              action="/matchs/@Model.MatchId/pronostic" method="post" class="px-4 py-4"
+              x-data="{ h: @(mine?.HomeScore ?? 0), a: @(mine?.AwayScore ?? 0) }">
+            <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                @foreach (var (side, team, field) in new[] { ("h", m.Home, "home"), ("a", m.Away, "away") })
+                {
+                    @if (side == "a") { <span class="score text-[28px] text-ink-3">-</span> }
+                    <div class="grid justify-items-center gap-2">
+                        <span class="flex max-w-full items-center gap-1.5 truncate text-[13.5px] font-semibold"><crest team="team" />@team?.ShortName</span>
+                        <div class="stepper">
+                            <button type="button" @@click="@side = Math.max(0, @side - 1)" aria-label="Un but de moins pour @team?.ShortName">−</button>
+                            <input type="number" name="@field" min="0" max="20" inputmode="numeric" x-model.number="@side" value="@(side == "h" ? mine?.HomeScore ?? 0 : mine?.AwayScore ?? 0)"
+                                   aria-label="Buts de @team?.Name" class="score">
+                            <button type="button" @@click="@side = Math.min(20, @side + 1)" aria-label="Un but de plus pour @team?.ShortName">+</button>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="mt-4 flex items-center gap-3">
+                <button class="btn btn-primary flex-1">@(mine is null ? "Valider mon pronostic" : "Modifier mon pronostic")</button>
+            </div>
+            @if (Model.Error is not null) { <p class="mt-2 text-[13px] font-medium text-loss" role="alert">@Model.Error</p> }
+            else if (Model.Saved) { <p class="mt-2 text-[13px] font-medium text-win" role="status">Pronostic enregistré : @mine?.HomeScore-@mine?.AwayScore. Modifiable jusqu'au coup d'envoi.</p> }
+            else { <p class="mt-2 text-[12.5px] text-ink-3">Score exact : @PredictionService.ExactPoints points · bon résultat : @PredictionService.OutcomePoints point. Fermé au coup d'envoi.</p> }
+        </form>
+    }
+    else if (b.Open)
+    {
+        <div class="flex flex-wrap items-center gap-3 px-4 py-4">
+            <p class="min-w-0 flex-1 text-[14px] text-ink-2">Devinez le score et gagnez des points au classement des supporters.</p>
+            <a href="/compte/connexion?returnUrl=@Uri.EscapeDataString(m.Url)" class="btn btn-primary btn-sm">Pronostiquer</a>
+        </div>
+    }
+    else if (mine is not null)
+    {
+        <div class="flex items-center gap-3 px-4 py-3 text-[14px]">
+            <span class="text-ink-2">Mon pronostic</span>
+            <span class="score text-[20px]">@mine.HomeScore-@mine.AwayScore</span>
+            @if (mine.Points is { } pts)
+            {
+                <span class="badge @(pts == PredictionService.ExactPoints ? "win" : pts > 0 ? "brand" : "")">+@pts pt@(pts > 1 ? "s" : "")</span>
+            }
+            else { <span class="text-[13px] text-ink-3">points attribués à la fin du match</span> }
+        </div>
+    }
+    @if (showSummary)
+    {
+        var s = b!.Summary;
+        <div class="border-t border-line px-4 py-3">
+            <div class="flex justify-between text-[12.5px] text-ink-2">
+                <span>@m!.Home?.ShortName <b class="num">@s.HomePct %</b></span><span>Nul <b class="num">@s.DrawPct %</b></span><span><b class="num">@s.AwayPct %</b> @m.Away?.ShortName</span>
+            </div>
+            <div class="mt-1.5 flex h-2 gap-0.5 overflow-hidden rounded-full" aria-hidden="true">
+                <span class="bg-brand" style="width:@(s.HomePct)%"></span>
+                <span class="bg-line-strong" style="width:@(s.DrawPct)%"></span>
+                <span class="bg-accent" style="width:@(s.AwayPct)%"></span>
+            </div>
+        </div>
+    }
+</section>

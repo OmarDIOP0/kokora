@@ -20,6 +20,8 @@ public class Article : Entity, IAuditable, IDemoData
     public bool IsFeatured { get; set; }
     /// <summary>Info importante : déclenche une notification push à la publication.</summary>
     public bool IsImportant { get; set; }
+    /// <summary>Date d'envoi de la notification (info importante), pour ne l'envoyer qu'une fois.</summary>
+    public DateTimeOffset? NotifiedAt { get; set; }
     public bool AllowComments { get; set; } = true;
     public string? AuthorId { get; set; }
     public string? AuthorName { get; set; }

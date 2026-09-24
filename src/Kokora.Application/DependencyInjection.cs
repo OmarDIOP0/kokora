@@ -30,6 +30,12 @@ public static class DependencyInjection
         services.AddScoped<StatsService>();
         services.AddScoped<DirectoryService>();
         services.AddScoped<NewsService>();
+
+        services.AddScoped<Engagement.NotificationService>();
+        services.AddScoped<Engagement.PredictionService>();
+        services.AddScoped<Engagement.VoteService>();
+        services.AddScoped<Engagement.CommentService>();
+        services.AddScoped<Engagement.AccountDataService>();
         return services;
     }
 }

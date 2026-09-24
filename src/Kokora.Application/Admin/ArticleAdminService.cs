@@ -7,7 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace Kokora.Application.Admin;
 
 /// <summary>Rédaction des infos : articles, catégories, mots-clés, images.</summary>
-public class ArticleAdminService(IAppDbContext db, IImageStore images, IHtmlCleaner cleaner, ICurrentUser user)
+public class ArticleAdminService(IAppDbContext db, IImageStore images, IHtmlCleaner cleaner, ICurrentUser user,
+    Engagement.NotificationService notifications)
 {
     public const int PageSize = 30;
 
@@ -167,6 +168,8 @@ public class ArticleAdminService(IAppDbContext db, IImageStore images, IHtmlClea
 
         await db.SaveChangesAsync(ct);
         await DeleteCoverAsync(oldCover);
+        // Info importante en ligne : notification (une seule fois). Programmée : envoyée à l'heure par la tâche de fond.
+        if (article.IsImportant) await notifications.ArticleAsync(article.Id, ct);
         return article.Id;
     }
 

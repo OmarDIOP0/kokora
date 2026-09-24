@@ -165,5 +165,9 @@ public class FieldTagHelper : TagHelper
         return sb;
     }
 
-    private static string E(string? s) => WebUtility.HtmlEncode(s ?? "");
+    // Accents conservés tels quels (même réglage que les vues) : seuls les caractères spéciaux HTML sont encodés.
+    private static readonly System.Text.Encodings.Web.HtmlEncoder Encoder =
+        System.Text.Encodings.Web.HtmlEncoder.Create(System.Text.Unicode.UnicodeRanges.All);
+
+    private static string E(string? s) => Encoder.Encode(s ?? "");
 }

@@ -1,3 +1,4 @@
+using Kokora.Application.Engagement;
 using Kokora.Application.Public;
 using Kokora.Web.Infrastructure;
 
@@ -43,6 +44,8 @@ public class MatchPageVm
     public required string ShareText { get; init; }
     public IReadOnlyList<GalleryPhotoVm> Photos { get; init; } = [];
     public IReadOnlyList<ArticleCardVm> News { get; init; } = [];
+    public MatchPredictionBlock? Prediction { get; init; }
+    public VoteBlock? Vote { get; init; }
 }
 
 public class StandingsPageVm
@@ -67,4 +70,22 @@ public class ArticlePageVm
 {
     public required ArticleDetailVm Article { get; init; }
     public required string ShareUrl { get; init; }
+    public required CommentsPartVm Comments { get; init; }
 }
+
+public class PredictionsPageVm
+{
+    public SeasonVm? Season { get; init; }
+    public IReadOnlyList<UpcomingPrediction> Upcoming { get; init; } = [];
+    public Leaderboard? Board { get; init; }
+}
+
+/// <summary>Bloc « Pronostic » de la fiche match (rafraîchi par htmx après envoi).</summary>
+public record PredictionPartVm(int MatchId, MatchPredictionBlock? Block, MatchRowVm? Match, string? Error = null, bool Saved = false);
+
+/// <summary>Ligne de la page Pronostics : un match à venir et le pronostic de l'utilisateur.</summary>
+public record PredictionRowVm(MatchRowVm Match, PredictionVm? Mine, string? Error = null, bool Saved = false);
+
+public record VotePartVm(int MatchId, VoteBlock? Block, string? Error = null);
+
+public record CommentsPartVm(int ArticleId, bool Allowed, IReadOnlyList<CommentVm> Items, string? Message = null, string? Error = null, string? Draft = null);

@@ -1,0 +1,33 @@
+@model PredictionRowVm
+@{
+    var m = Model.Match;
+    var mine = Model.Mine;
+    var signedIn = User.Identity?.IsAuthenticated == true;
+}
+<div class="border-b border-line px-4 py-3 last:border-b-0" id="pred-@m.Id">
+    <div class="flex items-center gap-1.5 text-[12px] text-ink-3" style="--comp:@m.CompetitionColor">
+        <span class="comp-swatch !h-2 !w-2"></span>
+        <span class="truncate">@(m.KickoffAt is { } k ? KokoraTime.DayRelative(DateOnly.FromDateTime(KokoraTime.ToLocal(k).DateTime)) + ", " + KokoraTime.Hour(k) : "") · @m.Competition</span>
+        @if (Model.Saved) { <span class="ml-auto font-semibold text-win">Enregistré</span> }
+        else if (mine is not null) { <span class="ml-auto inline-flex items-center gap-1 text-brand"><icon name="check" />Pronostiqué</span> }
+    </div>
+    @if (signedIn)
+    {
+        <form hx-post="/matchs/@m.Id/pronostic?place=liste" hx-target="#pred-@m.Id" hx-swap="outerHTML" action="/matchs/@m.Id/pronostic?place=liste" method="post"
+              class="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+            <span class="flex min-w-0 items-center justify-end gap-2 text-right"><span class="truncate font-semibold">@m.Home?.ShortName</span><crest team="m.Home" /></span>
+            <span class="flex items-center gap-1.5">
+                <input type="number" name="home" min="0" max="20" inputmode="numeric" required value="@mine?.HomeScore" class="input score !h-11 !w-12 !px-0 text-center !text-[20px]" aria-label="Buts de @m.Home?.Name">
+                <span class="text-ink-3">-</span>
+                <input type="number" name="away" min="0" max="20" inputmode="numeric" required value="@mine?.AwayScore" class="input score !h-11 !w-12 !px-0 text-center !text-[20px]" aria-label="Buts de @m.Away?.Name">
+            </span>
+            <span class="flex min-w-0 items-center gap-2"><crest team="m.Away" /><span class="truncate font-semibold">@m.Away?.ShortName</span></span>
+            <button class="btn btn-secondary btn-sm col-span-3 mt-1 justify-self-center">@(mine is null ? "Valider" : "Modifier")</button>
+        </form>
+        @if (Model.Error is not null) { <p class="mt-1 text-center text-[13px] text-loss" role="alert">@Model.Error</p> }
+    }
+    else
+    {
+        <div class="[&>.match]:border-0 [&>.match]:px-0"><partial name="Components/_MatchRow" model="m" /></div>
+    }
+</div>

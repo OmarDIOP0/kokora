@@ -115,6 +115,25 @@ Toutes les modifications sont tracées dans le **journal d'audit** (qui, quand, 
 
 **Données de démonstration** : `/admin/demo` crée 17 ASC fictives (« ASC Démo 1 »…), leurs joueurs, deux zonales avec des résultats simulés et quelques infos fictives (dont un brouillon et une info programmée). Un bouton les supprime toutes sans toucher aux vraies données. Disponible tant qu'aucune vraie saison n'existe pour l'année en cours.
 
+## Comptes des supporters
+
+- **Inscription** (`/compte/inscription`) avec un numéro sénégalais (enregistré au format +221…) ou un e-mail, et un mot de passe de 8 caractères avec un chiffre. Limité à 5 créations par heure et par adresse IP.
+- **Mon compte** (`/compte`) : nom affiché, équipes suivies, notifications, derniers pronostics, changement de mot de passe, **suppression du compte** (pronostics, votes, commentaires et favoris supprimés avec lui).
+- **Équipes suivies synchronisées** : à la première connexion sur un appareil, les équipes suivies sans compte s'ajoutent à celles du compte ; ensuite le compte fait foi, sur tous les appareils.
+- **Pronostics** (`/pronostics` et fiche match) : ouverts jusqu'au coup d'envoi ; score exact 3 points, bon résultat 1 point ; classement de la saison. Les points sont recalculés si un résultat est corrigé ou effacé.
+- **Homme du match** : vote sur la fiche match pendant 48 h après la fin, un vote par compte (modifiable).
+- **Commentaires des infos** : relus par l'équipe avant publication (`/admin/commentaires`), sauf pour l'équipe et les supporters ayant déjà 3 commentaires validés ; 5 commentaires maximum par tranche de 10 minutes.
+- **Admin → Utilisateurs et rôles** : recherche, rôle (un admin nomme des rédacteurs ; seul un super admin nomme des admins ; il reste toujours au moins un super admin), blocage, mot de passe temporaire pour un compte oublié.
+
+### Notifications push
+
+Standard Web Push (Chrome, Firefox, Edge ; Safari sur iPhone une fois Kokora ajouté à l'écran d'accueil), **sans compte obligatoire** : l'abonnement retient les équipes suivies sur l'appareil.
+
+- Automatiques : coup d'envoi, buts et résultat final des équipes suivies (depuis le mode terrain), infos marquées « importantes » (à la publication, ou à l'heure programmée). Chaque type est désactivable (page Plus ou Mon compte).
+- Manuelles : Admin → Notifications (tous les abonnés ou les supporters d'une équipe).
+- Clés VAPID : `Push:PublicKey`, `Push:PrivateKey`, `Push:Subject` (ex. `mailto:contact@votre-domaine.sn`). Sans configuration, une paire est générée au premier démarrage dans `src/Kokora.Web/App_Data/vapid.json` (ignoré par git). **Sauvegardez ces clés** : les changer rend tous les abonnements existants inutilisables.
+- Les envois partent en arrière-plan (la saisie en direct n'attend jamais) ; les abonnements expirés sont supprimés automatiquement.
+
 ## Partie publique
 
 - `/` : matchs par jour (bande de dates), à venir, résultats ; bloc « En direct » ; équipes suivies en premier.

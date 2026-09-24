@@ -14,7 +14,12 @@
             <button type="submit" class="btn btn-primary w-full">Se connecter</button>
         </form>
     </section>
-    <p class="px-4 py-4 text-center text-[13px] text-ink-3">
-        La création de compte pour les supporters arrive bientôt : favoris synchronisés, notifications de buts, pronostics.
-    </p>
+    <section class="section">
+        <a href="/compte/inscription@(Model.ReturnUrl is null ? "" : "?returnUrl=" + Uri.EscapeDataString(Model.ReturnUrl))" class="row">
+            <icon name="user-plus" class="text-brand" />
+            <span class="flex-1"><span class="block font-semibold">Pas encore de compte ?</span>
+                <span class="block text-[13px] text-ink-3">Gratuit : pronostics, homme du match, commentaires, équipes suivies sur tous vos appareils.</span></span>
+            <icon name="chevron-right" class="text-ink-3" />
+        </a>
+    </section>
 </div>

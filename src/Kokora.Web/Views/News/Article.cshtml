@@ -125,6 +125,8 @@
         </section>
     }
 
+    @if (a.IsLive) { <partial name="_Comments" model="Model.Comments" /> }
+
     @if (a.Related.Count > 0)
     {
         <section class="section">

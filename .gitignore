@@ -488,3 +488,6 @@ src/Kokora.Web/wwwroot/uploads/
 src/Kokora.Web/wwwroot/fonts/
 src/Kokora.Web/Icons/
 src/Kokora.Web/wwwroot/_snapshots/
+
+# Clés VAPID générées en développement
+src/Kokora.Web/App_Data/

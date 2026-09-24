@@ -48,7 +48,7 @@ public class ResultEventInput
 
 /// <summary>Saisie (rapide) du résultat d'un match déjà joué, et ses conséquences : classements, tableau.</summary>
 public class ResultService(IAppDbContext db, CompetitionCache cache, QualificationService qualifications, ICurrentUser user,
-    ILiveNotifier notifier)
+    ILiveNotifier notifier, Engagement.PredictionService predictions)
 {
     public static readonly MatchEventType[] EditableEvents =
         [MatchEventType.Goal, MatchEventType.PenaltyGoal, MatchEventType.OwnGoal, MatchEventType.YellowCard,
@@ -204,6 +204,7 @@ public class ResultService(IAppDbContext db, CompetitionCache cache, Qualificati
         await db.SaveChangesAsync(ct);
         await qualifications.ResolveFromMatchAsync(m.Id, ct);
         cache.Invalidate(m.Phase.CompetitionId);
+        await predictions.ScoreMatchAsync(m.Id, ct);
         await NotifyAsync(m, ct);
     }
 
@@ -226,6 +227,7 @@ public class ResultService(IAppDbContext db, CompetitionCache cache, Qualificati
         await db.SaveChangesAsync(ct);
         await qualifications.ResolveFromMatchAsync(m.Id, ct);
         cache.Invalidate(m.Phase.CompetitionId);
+        await predictions.ScoreMatchAsync(m.Id, ct);
         await NotifyAsync(m, ct);
     }
 

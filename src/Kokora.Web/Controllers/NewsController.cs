@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Kokora.Web.Controllers;
 
 /// <summary>Infos : communiqués, résumés, décisions de la commission.</summary>
-public class NewsController(NewsService news) : Controller
+public class NewsController(NewsService news, Kokora.Application.Engagement.CommentService comments) : Controller
 {
     [HttpGet("/infos")]
     public async Task<IActionResult> Index(string? categorie, string? tag, string? equipe, int page = 1, CancellationToken ct = default)
@@ -40,7 +40,13 @@ public class NewsController(NewsService news) : Controller
         var preview = User.IsInRole(Roles.SuperAdmin) || User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Editor);
         var article = await news.ArticleAsync(slug, preview, ct);
         if (article is null) return NotFound();
-        return View(new ArticlePageVm { Article = article, ShareUrl = $"{Request.Scheme}://{Request.Host}{article.Card.Url}" });
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        return View(new ArticlePageVm
+        {
+            Article = article, ShareUrl = $"{Request.Scheme}://{Request.Host}{article.Card.Url}",
+            Comments = new CommentsPartVm(article.Card.Id, article.AllowComments && article.IsLive,
+                await comments.ListAsync(article.Card.Id, userId, ct))
+        });
     }
 
     private static string? Blank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();

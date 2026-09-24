@@ -5,6 +5,8 @@ import { dayjs } from './lib/time.js';
 import { favorites } from './lib/favorites.js';
 import { theme } from './lib/theme.js';
 import { tickClocks } from './lib/clock.js';
+import { pushSettings } from './lib/push.js';
+import { syncAccount } from './lib/account.js';
 
 window.htmx = htmx;
 htmx.config.defaultSwapStyle = 'innerHTML';
@@ -20,6 +22,7 @@ document.addEventListener('htmx:configRequest', (e) => {
 
 Alpine.store('favs', favorites);
 Alpine.store('theme', theme);
+Alpine.data('pushSettings', pushSettings);
 window.Alpine = Alpine;
 
 // Heures relatives : <time data-rel datetime="…">
@@ -63,3 +66,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 Alpine.start();
+syncAccount(Alpine.store('favs'));

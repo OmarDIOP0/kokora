@@ -1,0 +1,54 @@
+@model CommentsPageVm
+@{
+    ViewData["Title"] = "Commentaires";
+    var tabs = new (string? Key, string Label, CommentStatus Status)[]
+    {
+        (null, $"En attente ({Model.Pending})", CommentStatus.Pending), ("publies", "Publiés", CommentStatus.Approved), ("refuses", "Refusés", CommentStatus.Rejected)
+    };
+}
+<div class="page-head">
+    <div>
+        <p class="label">Contenu</p>
+        <h1>Commentaires</h1>
+        <p class="mt-1 max-w-[62ch] text-[14px] text-ink-2">
+            Les commentaires des supporters attendent votre validation, sauf ceux de l'équipe et des supporters ayant déjà
+            @CommentService.TrustedAfter commentaires publiés.
+        </p>
+    </div>
+</div>
+
+<section class="section">
+    <nav class="tabs" aria-label="Filtrer">
+        @foreach (var t in tabs)
+        {
+            <a href="/admin/commentaires@(t.Key is null ? "" : "?statut=" + t.Key)" class="tab @(Model.Status == t.Status ? "is-active" : "")">@t.Label</a>
+        }
+    </nav>
+    @if (Model.Items.Count == 0)
+    {
+        <div class="empty border-t border-line">@(Model.Status == CommentStatus.Pending ? "Aucun commentaire à valider." : "Aucun commentaire.")</div>
+    }
+    @foreach (var c in Model.Items)
+    {
+        <article class="border-t border-line px-4 py-3" id="c-@c.Id">
+            <div class="flex flex-wrap items-center gap-x-2 text-[13px] text-ink-3">
+                <span class="font-semibold text-ink">@c.Author</span>
+                <span>· @KokoraTime.ToLocal(c.At).ToString("d MMM à HH'h'mm", KokoraTime.Fr)</span>
+                <span>· sur <a href="/infos/@c.ArticleSlug#comments" target="_blank" class="text-brand hover:underline">@c.ArticleTitle</a></span>
+            </div>
+            <p class="mt-1.5 whitespace-pre-line break-words text-[15px]">@c.Body</p>
+            <div class="mt-2 flex flex-wrap gap-2">
+                @if (c.Status != CommentStatus.Approved)
+                {
+                    <button class="btn btn-primary btn-sm" hx-post="/admin/commentaires/@c.Id/statut?status=@((int)CommentStatus.Approved)" hx-target="#c-@c.Id" hx-swap="outerHTML">Publier</button>
+                }
+                @if (c.Status != CommentStatus.Rejected)
+                {
+                    <button class="btn btn-secondary btn-sm" hx-post="/admin/commentaires/@c.Id/statut?status=@((int)CommentStatus.Rejected)" hx-target="#c-@c.Id" hx-swap="outerHTML">Refuser</button>
+                }
+                <button class="btn btn-ghost btn-sm text-loss" hx-post="/admin/commentaires/@c.Id/supprimer" hx-target="#c-@c.Id" hx-swap="outerHTML"
+                        hx-confirm="Supprimer définitivement ce commentaire ?">Supprimer</button>
+            </div>
+        </article>
+    }
+</section>

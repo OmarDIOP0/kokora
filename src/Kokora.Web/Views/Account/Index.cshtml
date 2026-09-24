@@ -1,0 +1,133 @@
+@model Kokora.Web.Controllers.AccountPageVm
+@{
+    ViewData["Title"] = "Mon compte";
+    var u = Model.User;
+    var flash = TempData["k-account"] as string;
+    var welcome = TempData["k-welcome"] is not null;
+    var login = u.Email ?? u.PhoneNumber ?? u.UserName;
+    var tab = Model.Tab ?? "profil";
+}
+<div class="mx-auto max-w-[720px]" x-data="{ tab: '@tab' }">
+    <section class="section">
+        <div class="flex items-center gap-4 px-4 py-4">
+            <span class="grid h-14 w-14 flex-none place-items-center rounded-full bg-brand-soft font-display text-[26px] font-bold text-brand" aria-hidden="true">@(u.DisplayName.Length > 0 ? char.ToUpper(u.DisplayName[0]) : '?')</span>
+            <div class="min-w-0 flex-1">
+                <h1 class="truncate text-[26px]">@u.DisplayName</h1>
+                <p class="truncate text-[13.5px] text-ink-3">@login · membre depuis @KokoraTime.ToLocal(u.CreatedAt).ToString("MMMM yyyy", KokoraTime.Fr)</p>
+            </div>
+            @if (Model.Rank is { } r)
+            {
+                <a href="/pronostics" class="grid justify-items-end text-right">
+                    <span class="score text-[28px] leading-none">@r.Points</span>
+                    <span class="text-[12px] text-ink-3">pts · @(r.Rank)@(r.Rank == 1 ? "er" : "e")</span>
+                </a>
+            }
+        </div>
+        @if (welcome)
+        {
+            <p class="notice !rounded-none border-t border-line" role="status"><icon name="party-popper" />Bienvenue ! Vos équipes suivies sont maintenant enregistrées sur votre compte.</p>
+        }
+        else if (flash is not null)
+        {
+            <p class="notice !rounded-none border-t border-line" role="status"><icon name="check" />@flash</p>
+        }
+        <nav class="tabs !border-t !border-line" role="tablist">
+            @foreach (var (key, label) in new[] { ("profil", "Profil"), ("equipes", "Mes équipes"), ("notifications", "Notifications"), ("pronostics", "Pronostics"), ("securite", "Sécurité") })
+            {
+                <button type="button" class="tab" role="tab" :aria-selected="tab === '@key'" @@click="tab = '@key'" aria-selected="@(tab == key ? "true" : "false")">@label</button>
+            }
+        </nav>
+    </section>
+
+    <!-- Profil -->
+    <div x-show="tab === 'profil'" x-cloak="@(tab == "profil" ? null : "")">
+        <section class="section">
+            <form method="post" action="/compte/profil" novalidate>
+                <div class="form-grid"><k-field asp-for="Profile.DisplayName" hint="Visible dans les classements et les commentaires." /></div>
+                <div class="form-actions"><button class="btn btn-primary btn-sm">Enregistrer</button></div>
+            </form>
+        </section>
+        <section class="section">
+            @if (Model.IsStaff)
+            {
+                <a href="/admin" class="row"><icon name="layout-dashboard" class="text-ink-2" /><span class="flex-1">Administration</span><icon name="chevron-right" class="text-ink-3" /></a>
+            }
+            <form method="post" action="/compte/deconnexion">
+                <button class="row w-full text-left"><icon name="log-out" class="text-ink-2" /><span>Se déconnecter</span></button>
+            </form>
+        </section>
+    </div>
+
+    <!-- Équipes suivies -->
+    <div x-show="tab === 'equipes'" x-cloak>
+        <section class="section">
+            <header class="section-head"><span>Équipes suivies</span><span class="sub">synchronisées sur vos appareils</span></header>
+            @if (Model.Favorites.Count == 0)
+            {
+                <div class="empty !py-6">Aucune équipe suivie. Ouvrez la page d'une équipe et touchez « Suivre ».</div>
+            }
+            @foreach (var t in Model.Favorites)
+            {
+                <div class="row">
+                    <crest team="t" />
+                    <a href="@t.Url" class="min-w-0 flex-1 truncate font-medium">@t.Name</a>
+                    <partial name="~/Views/Directory/_FollowButton.cshtml" model="t" />
+                </div>
+            }
+            <a href="/equipes" class="row justify-center text-[14px] font-semibold text-brand">Toutes les équipes</a>
+        </section>
+    </div>
+
+    <!-- Notifications -->
+    <div x-show="tab === 'notifications'" x-cloak>
+        <partial name="_PushSettings" />
+    </div>
+
+    <!-- Pronostics -->
+    <div x-show="tab === 'pronostics'" x-cloak>
+        <section class="section">
+            <header class="section-head"><span>Mes derniers pronostics</span><a href="/pronostics" class="ml-auto text-[13px] font-semibold text-brand">Pronostiquer</a></header>
+            @if (Model.Predictions.Count == 0) { <div class="empty !py-6">Aucun pronostic pour l'instant.</div> }
+            @foreach (var (m, p) in Model.Predictions)
+            {
+                <div class="border-b border-line last:border-b-0">
+                    <div class="flex items-center gap-2 px-4 pt-2 text-[12px] text-ink-3">
+                        <span>Mon pronostic <b class="num text-ink">@p.HomeScore-@p.AwayScore</b></span>
+                        @if (p.Points is { } pts) { <span class="badge @(pts == PredictionService.ExactPoints ? "win" : pts > 0 ? "brand" : "")">+@pts</span> }
+                    </div>
+                    <div class="[&>.match]:border-0"><partial name="Components/_MatchRow" model="m" /></div>
+                </div>
+            }
+        </section>
+    </div>
+
+    <!-- Sécurité -->
+    <div x-show="tab === 'securite'" x-cloak="@(tab == "securite" ? null : "")">
+        <section class="section">
+            <header class="section-head"><span>Changer le mot de passe</span></header>
+            <form method="post" action="/compte/mot-de-passe" novalidate>
+                <div class="form-grid">
+                    <k-field asp-for="Password.Current" type="password" autocomplete="current-password" />
+                    <k-field asp-for="Password.New" type="password" autocomplete="new-password" hint="8 caractères minimum, avec au moins un chiffre." />
+                    <k-field asp-for="Password.Confirm" type="password" autocomplete="new-password" />
+                </div>
+                <div class="form-actions"><button class="btn btn-primary btn-sm">Modifier le mot de passe</button></div>
+            </form>
+        </section>
+        @if (!User.IsInRole(Kokora.Application.Abstractions.Roles.SuperAdmin))
+        {
+            <section class="section" x-data="{ confirm: false }">
+                <header class="section-head"><span class="text-loss">Supprimer mon compte</span></header>
+                <p class="px-4 pt-3 text-[14px] text-ink-2">Vos pronostics, votes, commentaires et équipes suivies seront définitivement supprimés.</p>
+                <form method="post" action="/compte/supprimer" class="grid gap-3 p-4" x-show="confirm" x-cloak>
+                    <div class="field">
+                        <label for="delete-password">Mot de passe pour confirmer</label>
+                        <input type="password" id="delete-password" name="password" required autocomplete="current-password" class="input">
+                    </div>
+                    <button class="btn btn-danger">Supprimer définitivement</button>
+                </form>
+                <div class="p-4" x-show="!confirm"><button type="button" class="btn btn-secondary btn-sm text-loss" @@click="confirm = true">Supprimer mon compte…</button></div>
+            </section>
+        }
+    </div>
+</div>

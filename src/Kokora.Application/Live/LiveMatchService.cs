@@ -61,7 +61,7 @@ public record LiveStateVm
 /// tirs au but). Chaque action met à jour le score, invalide les classements et est diffusée aux spectateurs connectés.
 /// </summary>
 public class LiveMatchService(IAppDbContext db, CompetitionCache cache, QualificationService qualifications,
-    ILiveNotifier notifier, ICurrentUser user)
+    ILiveNotifier notifier, ICurrentUser user, Engagement.NotificationService push, Engagement.PredictionService predictions)
 {
     private static readonly MatchEventType[] GoalTypes = [MatchEventType.Goal, MatchEventType.PenaltyGoal, MatchEventType.OwnGoal];
     private static readonly MatchEventType[] LiveTypes =
@@ -187,7 +187,13 @@ public class LiveMatchService(IAppDbContext db, CompetitionCache cache, Qualific
         m.Status = LiveFlow.StatusFor(to);
         m.PeriodStartedAt = to == LivePeriod.Ended ? null : now;
         await SaveAsync(m, to == LivePeriod.Ended ? "Fin du match" : LiveFlow.ActionLabel(to), ct);
-        if (to == LivePeriod.Ended) await qualifications.ResolveFromMatchAsync(m.Id, ct);
+        if (to == LivePeriod.FirstHalf) await push.MatchAsync(m, Engagement.MatchPushKind.Kickoff, null, ct);
+        if (to == LivePeriod.Ended)
+        {
+            await qualifications.ResolveFromMatchAsync(m.Id, ct);
+            await predictions.ScoreMatchAsync(m.Id, ct);
+            await push.MatchAsync(m, Engagement.MatchPushKind.FullTime, $"{m.Phase.Competition.Name} · {Mapping.Stage(m)}", ct);
+        }
     }
 
     /// <summary>Recale le chronomètre sur la minute annoncée par l'arbitre.</summary>
@@ -280,6 +286,13 @@ public class LiveMatchService(IAppDbContext db, CompetitionCache cache, Qualific
             _ => null
         };
         await SaveAsync(m, text, ct);
+        if (type is MatchEventType.Goal or MatchEventType.PenaltyGoal or MatchEventType.OwnGoal)
+        {
+            var scorer = input.PlayerId is { } sid ? await db.Players.AsNoTracking().Where(p => p.Id == sid)
+                .Select(p => p.Nickname ?? p.FirstName + " " + p.LastName).FirstOrDefaultAsync(ct) : null;
+            var how = type switch { MatchEventType.PenaltyGoal => " (penalty)", MatchEventType.OwnGoal => " (contre son camp)", _ => "" };
+            await push.MatchAsync(m, Engagement.MatchPushKind.Goal, $"{e.MinuteLabel} · {scorer ?? team}{how}", ct);
+        }
     }
 
     /// <summary>Annule une action (erreur de saisie) : conservée pour l'audit mais retirée du score et de la chronologie.</summary>

@@ -1,0 +1,69 @@
+@model PredictionsPageVm
+@{
+    ViewData["Title"] = "Pronostics";
+    ViewData["Description"] = "Pronostiquez les scores du navétane de Nguékokh et comparez-vous aux autres supporters.";
+    var signedIn = User.Identity?.IsAuthenticated == true;
+    var board = Model.Board;
+}
+<div class="mx-auto max-w-[960px]">
+    <div class="px-4 pb-3 pt-4 md:px-0">
+        <h1 class="text-[28px]">Pronostics</h1>
+        <p class="mt-1 max-w-[60ch] text-[14px] text-ink-2">
+            Devinez les scores avant le coup d'envoi : <b>@PredictionService.ExactPoints points</b> pour le score exact,
+            <b>@PredictionService.OutcomePoints point</b> pour le bon résultat. Classement sur toute la saison.
+        </p>
+    </div>
+
+    @if (Model.Season is null)
+    {
+        <section class="section"><div class="empty"><strong>La saison n'a pas commencé</strong>Les pronostics ouvriront avec le calendrier.</div></section>
+    }
+    else
+    {
+        <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_360px] md:items-start">
+            <section class="section">
+                <header class="section-head"><span>À pronostiquer</span><span class="sub">7 prochains jours</span></header>
+                @if (!signedIn)
+                {
+                    <div class="flex items-center gap-3 border-b border-line px-4 py-3">
+                        <p class="min-w-0 flex-1 text-[14px] text-ink-2">Créez un compte gratuit pour participer.</p>
+                        <a href="/compte/inscription?returnUrl=%2Fpronostics" class="btn btn-primary btn-sm">Participer</a>
+                    </div>
+                }
+                @if (Model.Upcoming.Count == 0) { <div class="empty !py-6">Aucun match programmé dans les 7 prochains jours.</div> }
+                @foreach (var u in Model.Upcoming) { <partial name="_PredictionRow" model="new PredictionRowVm(u.Match, u.Mine)" /> }
+            </section>
+
+            <section class="section">
+                <header class="section-head"><span>Classement des supporters</span></header>
+                @if (board is null || board.Top.Count == 0)
+                {
+                    <div class="empty !py-6">Le classement apparaîtra après les premiers matchs pronostiqués.</div>
+                }
+                else
+                {
+                    <table class="standings">
+                        <thead><tr><th class="pos">#</th><th class="team">Supporter</th><th title="Scores exacts">Ex.</th><th>Pts</th></tr></thead>
+                        <tbody>
+                            @foreach (var r in board.Top)
+                            {
+                                <tr class="@(r.UserId == board.Me?.UserId ? "is-fav" : "")">
+                                    <td class="pos num">@r.Rank</td>
+                                    <td class="team"><span class="truncate">@r.Name</span></td>
+                                    <td class="num">@r.Exact</td>
+                                    <td class="pts num">@r.Points</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                    @if (board.Me is { } me && board.Top.All(r => r.UserId != me.UserId))
+                    {
+                        <div class="flex items-center gap-3 border-t border-line px-4 py-2.5 text-[14px]">
+                            <span class="num w-6 text-ink-2">@me.Rank</span><span class="flex-1 font-semibold">Vous</span><span class="score text-[18px]">@me.Points pts</span>
+                        </div>
+                    }
+                }
+            </section>
+        </div>
+    }
+</div>

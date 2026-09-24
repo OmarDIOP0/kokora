@@ -1,0 +1,69 @@
+@model VotePartVm
+@{
+    var b = Model.Block;
+    var signedIn = User.Identity?.IsAuthenticated == true;
+}
+@if (b is not null)
+{
+    <section class="section" id="vote-@Model.MatchId">
+        <header class="section-head">
+            <span>Homme du match</span>
+            <span class="sub">@(b.Open ? "vote des supporters" : "vote terminé") · @b.Total vote@(b.Total > 1 ? "s" : "")</span>
+        </header>
+
+        @if (b.Results.Count > 0)
+        {
+            @foreach (var (r, i) in b.Results.Select((r, i) => (r, i)))
+            {
+                <div class="flex items-center gap-3 border-b border-line px-4 py-2.5 last:border-b-0 @(i == 0 ? "font-semibold" : "")">
+                    <span class="w-5 text-center text-ink-3">@(i + 1)</span>
+                    <a href="@(r.Slug is null ? "#" : "/joueurs/" + r.Slug)" class="min-w-0 flex-1 truncate">@r.Name</a>
+                    <span class="hidden h-1.5 w-24 overflow-hidden rounded-full bg-surface-2 sm:block" aria-hidden="true"><span class="block h-full bg-brand" style="width:@(r.Pct)%"></span></span>
+                    <span class="num w-11 text-right text-[14px]">@r.Pct %</span>
+                    @if (b.MyVote == r.PlayerId) { <icon name="check" class="text-brand" label="Mon vote" /> }
+                </div>
+            }
+        }
+        else if (b.Open)
+        {
+            <p class="px-4 pt-3 text-[14px] text-ink-2">Soyez le premier à voter.</p>
+        }
+
+        @if (b.Open && signedIn)
+        {
+            <form hx-post="/matchs/@Model.MatchId/vote" hx-target="#vote-@Model.MatchId" hx-swap="outerHTML"
+                  action="/matchs/@Model.MatchId/vote" method="post" class="border-t border-line" x-data="{ open: @(b.MyVote is null ? "true" : "false") }">
+                <button type="button" class="row w-full justify-between text-[14px] font-semibold text-brand" @@click="open = !open" :aria-expanded="open">
+                    <span>@(b.MyVote is null ? "Choisir mon homme du match" : "Changer mon vote")</span>
+                    <icon name="chevron-down" />
+                </button>
+                <div x-show="open" x-cloak="@(b.MyVote is null ? null : "")" class="px-3 pb-3"
+                     x-data="{ side: '@(b.Candidates.Any(c => !c.IsHome && c.PlayerId == b.MyVote) ? "away" : "home")' }">
+                    <div class="segmented mb-2">
+                        <button type="button" :aria-pressed="side === 'home'" @@click="side = 'home'">@b.HomeTeam</button>
+                        <button type="button" :aria-pressed="side === 'away'" @@click="side = 'away'">@b.AwayTeam</button>
+                    </div>
+                    <div class="grid gap-1 sm:grid-cols-2">
+                        @foreach (var c in b.Candidates)
+                        {
+                            <label class="check rounded-sm px-2 hover:bg-surface-2" x-show="side === '@(c.IsHome ? "home" : "away")'">
+                                <input type="radio" name="playerId" value="@c.PlayerId" checked="@(b.MyVote == c.PlayerId)" required>
+                                <span class="score w-6 text-right text-ink-3">@c.Number</span>
+                                <span class="truncate">@c.Name</span>
+                            </label>
+                        }
+                    </div>
+                    <button class="btn btn-primary mt-2 w-full">Voter</button>
+                </div>
+                @if (Model.Error is not null) { <p class="px-4 pb-3 text-[13px] font-medium text-loss" role="alert">@Model.Error</p> }
+            </form>
+        }
+        else if (b.Open)
+        {
+            <div class="flex items-center gap-3 border-t border-line px-4 py-3">
+                <p class="min-w-0 flex-1 text-[13.5px] text-ink-2">Vote ouvert jusqu'au @(b.ClosesAt is { } c ? KokoraTime.Long(c).ToLower(KokoraTime.Fr) : "")</p>
+                <a href="/compte/connexion?returnUrl=@Uri.EscapeDataString(Context.Request.Path)" class="btn btn-secondary btn-sm">Voter</a>
+            </div>
+        }
+    </section>
+}

@@ -138,6 +138,9 @@
         </div>
     </section>
 
+    @if (Model.Vote is not null) { <partial name="_Vote" model="new VotePartVm(m.Id, Model.Vote)" /> }
+    @if (Model.Prediction is not null) { <partial name="_Prediction" model="new PredictionPartVm(m.Id, Model.Prediction, m)" /> }
+
     @if (Model.News.Count > 0)
     {
         <section class="section">

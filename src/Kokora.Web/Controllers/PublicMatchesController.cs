@@ -5,8 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Kokora.Web.Controllers;
 
-public class PublicMatchesController(MatchQueryService queries, StandingsService standings, PublicContext ctx, NewsService news) : Controller
+public class PublicMatchesController(MatchQueryService queries, StandingsService standings, PublicContext ctx, NewsService news,
+    Kokora.Application.Engagement.PredictionService predictions, Kokora.Application.Engagement.VoteService votes) : Controller
 {
+    private string? UserId => User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
     // Un seul segment « 12-demo-1-demo-2 » : ASP.NET découperait « {id}-{slug} » au dernier tiret.
     [HttpGet("/matchs/{key:regex(^[[0-9]]+(-[[a-z0-9-]]+)?$)}")]
     public async Task<IActionResult> Match(string key, CancellationToken ct)
@@ -30,7 +33,9 @@ public class PublicMatchesController(MatchQueryService queries, StandingsService
             ShareUrl = url,
             ShareText = $"{score} · {detail.Competition.Name}, navétane de Nguékokh",
             Photos = await news.MatchPhotosAsync(id, ct),
-            News = await news.ForMatchAsync(id, ct)
+            News = await news.ForMatchAsync(id, ct),
+            Prediction = await predictions.BlockAsync(id, UserId, ct),
+            Vote = await votes.BlockAsync(id, UserId, ct)
         });
     }
 

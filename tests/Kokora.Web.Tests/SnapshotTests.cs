@@ -120,6 +120,43 @@ public class SnapshotTests(DemoDataFixture fx)
         await File.WriteAllTextAsync(Path.Combine(dir, "direct-match.html"), await client.GetStringAsync($"/admin/direct/{liveId.Id}"));
         await File.WriteAllTextAsync(Path.Combine(dir, "public-direct-accueil.html"), await anonymous.GetStringAsync("/?c=toutes&vue=a-venir"));
         await File.WriteAllTextAsync(Path.Combine(dir, "public-direct-match.html"), await anonymous.GetStringAsync($"/matchs/{liveId.Id}"));
+
+        // Comptes : utilisateur simulé, pronostics, votes et commentaires de test.
+        var final = await fx.QueryAsync(db => db.Matches.Where(m => m.IsDemo && m.IsFeatured).Select(m => m.Id).FirstAsync());
+        using (var scope = fx.Factory.Services.CreateScope())
+        {
+            var users = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<Kokora.Infrastructure.Identity.AppUser>>();
+            if (await users.FindByIdAsync("test-user") is null)
+                await users.CreateAsync(new Kokora.Infrastructure.Identity.AppUser { Id = "test-user", UserName = "testeur@kokora.test", Email = "testeur@kokora.test", DisplayName = "Awa (test)" });
+            var predictions = scope.ServiceProvider.GetRequiredService<Kokora.Application.Engagement.PredictionService>();
+            var votes = scope.ServiceProvider.GetRequiredService<Kokora.Application.Engagement.VoteService>();
+            var comments = scope.ServiceProvider.GetRequiredService<Kokora.Application.Engagement.CommentService>();
+            for (var i = 0; i < 6; i++)
+                await predictions.SaveAsync(final, i == 0 ? "test-user" : $"fictif-{i}", i % 3, (i + 1) % 2);
+            var voteBlock = await votes.BlockAsync(played, null);
+            if (voteBlock is { Open: true, Candidates.Count: > 3 })
+                for (var i = 0; i < 5; i++)
+                    await votes.VoteAsync(played, $"fictif-{i}", voteBlock.Candidates[i % 3].PlayerId);
+            var articleId = await fx.QueryAsync(db => db.Articles.Where(a => a.Slug == featured.Slug).Select(a => a.Id).FirstAsync());
+            if (!await fx.QueryAsync(db => db.Comments.AnyAsync(c => c.ArticleId == articleId)))
+            {
+                await comments.PostAsync(articleId, "fictif-1", "Moussa (test)", "Commentaire de test publié.");
+                foreach (var c in await comments.ModerationAsync(CommentStatus.Pending)) await comments.SetStatusAsync(c.Id, CommentStatus.Approved);
+                await comments.PostAsync(articleId, "test-user", "Awa (test)", "Commentaire de test en attente de validation.");
+            }
+        }
+        var user = fx.Factory.CreateClient(); // suit les redirections (adresse canonique des matchs)
+        user.DefaultRequestHeaders.Add(KokoraWebFactory.RoleHeader, RolesForTests.User);
+        var userPages = new Dictionary<string, string>
+        {
+            ["compte"] = "/compte", ["pronostics"] = "/pronostics", ["public-match-vote"] = $"/matchs/{played}",
+            ["public-match-pronostic"] = $"/matchs/{final}", ["public-article-commentaires"] = $"/infos/{featured.Slug}", ["public-plus-connecte"] = "/plus",
+        };
+        foreach (var (name, url) in userPages)
+            await File.WriteAllTextAsync(Path.Combine(dir, name + ".html"), await user.GetStringAsync(url));
+        await File.WriteAllTextAsync(Path.Combine(dir, "inscription.html"), await anonymous.GetStringAsync("/compte/inscription"));
+        foreach (var (name, url) in new Dictionary<string, string> { ["commentaires"] = "/admin/commentaires", ["utilisateurs"] = "/admin/utilisateurs", ["notifications"] = "/admin/notifications" })
+            await File.WriteAllTextAsync(Path.Combine(dir, name + ".html"), await client.GetStringAsync(url));
     }
 
     /// <summary>Image de test : bandes de couleur, sans aucun contenu réel.</summary>

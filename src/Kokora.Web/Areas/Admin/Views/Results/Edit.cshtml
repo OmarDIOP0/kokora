@@ -31,6 +31,7 @@
         <h1>Résultat</h1>
         <p class="mt-1 text-[14px] text-ink-2">@m.Phase.Competition.Name · @(m.Round?.Name ?? m.Group?.Name ?? m.Phase.Name)@(m.KickoffAt is { } k ? " · " + KokoraTime.Long(k) : "")</p>
     </div>
+    <a href="/admin/matchs/@m.Id/photos" class="btn btn-secondary btn-sm"><icon name="images" />Photos</a>
 </div>
 
 <script type="application/json" id="result-ctx">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(data))</script>

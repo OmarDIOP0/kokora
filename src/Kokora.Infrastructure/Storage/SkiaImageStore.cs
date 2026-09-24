@@ -23,7 +23,7 @@ public class SkiaImageStore : IImageStore
         Directory.CreateDirectory(_root);
     }
 
-    public async Task<IReadOnlyList<string>> SaveAsync(Stream input, string folder, string baseName,
+    public async Task<IReadOnlyList<SavedImage>> SaveImagesAsync(Stream input, string folder, string baseName,
         IReadOnlyList<ImageVariant> variants, CancellationToken ct = default)
     {
         using var buffer = new MemoryStream();
@@ -49,7 +49,7 @@ public class SkiaImageStore : IImageStore
         var safeName = string.Concat(baseName.Where(c => char.IsAsciiLetterOrDigit(c) || c == '-'));
         if (safeName.Length == 0) safeName = "image";
 
-        var urls = new List<string>(variants.Count);
+        var urls = new List<SavedImage>(variants.Count);
         foreach (var v in variants)
         {
             using var resized = Render(source, v);
@@ -57,7 +57,7 @@ public class SkiaImageStore : IImageStore
             var file = $"{safeName}-{stamp}{v.Suffix}.webp";
             await using (var fs = File.Create(Path.Combine(dir, file)))
                 data.SaveTo(fs);
-            urls.Add($"{_publicPrefix}/{safeFolder}/{file}");
+            urls.Add(new SavedImage($"{_publicPrefix}/{safeFolder}/{file}", resized.Width, resized.Height));
         }
         return urls;
     }

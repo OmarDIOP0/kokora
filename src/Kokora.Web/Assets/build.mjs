@@ -33,6 +33,8 @@ const options = {
     design: 'Assets/js/design.js',
     admin: 'Assets/js/admin.js',
     charts: 'Assets/js/charts.js',
+    editor: 'Assets/js/editor.js',
+    gallery: 'Assets/js/gallery.js',
   },
   absWorkingDir: root,
   outdir: 'wwwroot/dist',

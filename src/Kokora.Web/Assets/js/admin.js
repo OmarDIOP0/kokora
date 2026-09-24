@@ -45,8 +45,11 @@ function init(root = document) {
       maxOptions: null,
       allowEmptyOption: true,
       hidePlaceholder: false,
+      create: el.hasAttribute('data-tom-create'),
+      createOnBlur: el.hasAttribute('data-tom-create'),
       render: {
         no_results: () => '<div class="no-results">Aucun résultat</div>',
+        option_create: (data, escape) => `<div class="create">Ajouter « ${escape(data.input)} »</div>`,
       },
     });
   });
@@ -81,6 +84,10 @@ document.addEventListener('submit', (e) => {
 }, true);
 
 document.addEventListener('htmx:afterSwap', (e) => init(e.target));
+// Légende de photo enregistrée à la volée.
+document.addEventListener('htmx:afterRequest', (e) => {
+  if (e.detail.successful && e.detail.elt.matches?.('[data-caption-form]')) window.toast('Légende enregistrée');
+});
 document.addEventListener('htmx:responseError', (e) => {
   const text = e.detail.xhr.responseText;
   window.toast(text && text.length < 300 ? text : 'Une erreur est survenue.', 'error');

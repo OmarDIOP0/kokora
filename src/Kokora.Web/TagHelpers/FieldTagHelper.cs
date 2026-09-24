@@ -26,6 +26,8 @@ public class FieldTagHelper : TagHelper
     public string? Empty { get; set; }
     /// <summary>Active la recherche (Tom Select) sur une liste.</summary>
     public bool Search { get; set; }
+    /// <summary>Liste multiple où l'on peut saisir une nouvelle valeur (ex. mots-clés).</summary>
+    public bool Create { get; set; }
     public string? Accept { get; set; }
     public string? Class { get; set; }
     public bool Autofocus { get; set; }
@@ -82,7 +84,7 @@ public class FieldTagHelper : TagHelper
                         ? (For.Model as System.Collections.IEnumerable)?.Cast<object>().Select(o => Convert.ToString(o, CultureInfo.InvariantCulture)).ToHashSet() ?? []
                         : [value];
                     if (multiple && state?.RawValue is string[] raw) selected = raw.ToHashSet();
-                    html.Append($"<select id=\"{id}\" name=\"{E(name)}\" class=\"input\"{(multiple ? " multiple" : "")}{(Search || multiple ? " data-tom" : "")}{attrs}>");
+                    html.Append($"<select id=\"{id}\" name=\"{E(name)}\" class=\"input\"{(multiple ? " multiple" : "")}{(Search || multiple ? " data-tom" : "")}{(Create ? " data-tom-create" : "")}{attrs}>");
                     if (Empty is not null) html.Append($"<option value=\"\">{E(Empty)}</option>");
                     foreach (var group in (Items ?? []).GroupBy(i => i.Group?.Name))
                     {

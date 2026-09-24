@@ -20,12 +20,15 @@ public static class DependencyInjection
         services.AddScoped<ResultService>();
         services.AddScoped<QualificationService>();
         services.AddScoped<DisciplineAdminService>();
+        services.AddScoped<ArticleAdminService>();
+        services.AddScoped<PhotoAdminService>();
 
         services.AddSingleton<CompetitionCache>();
         services.AddScoped<StandingsService>();
         services.AddScoped<MatchQueryService>();
         services.AddScoped<StatsService>();
         services.AddScoped<DirectoryService>();
+        services.AddScoped<NewsService>();
         return services;
     }
 }

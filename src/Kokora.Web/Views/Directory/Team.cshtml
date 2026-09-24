@@ -17,6 +17,7 @@
         PlayerPosition.Forward => "Attaquants", _ => "Autres"
     };
     var wide = new ViewDataDictionary(ViewData) { ["Wide"] = true };
+    var compact = new ViewDataDictionary(ViewData) { ["Compact"] = true };
 }
 @section Head {
     <meta property="og:title" content="@t.Name · Kokora">
@@ -83,6 +84,13 @@
                 <section class="section">
                     <header class="section-head"><span class="text-loss">Suspendus</span></header>
                     <partial name="_SuspensionList" model="Model.Suspended" />
+                </section>
+            }
+            @if (Model.News.Count > 0)
+            {
+                <section class="section">
+                    <header class="section-head"><span>Infos</span><a href="/infos?equipe=@t.Slug" class="ml-auto text-[13px] font-semibold text-brand">Tout voir</a></header>
+                    @foreach (var n in Model.News) { <partial name="Components/_ArticleRow" model="n" view-data="compact" /> }
                 </section>
             }
             <section class="section">

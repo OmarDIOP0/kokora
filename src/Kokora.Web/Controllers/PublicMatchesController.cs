@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Kokora.Web.Controllers;
 
-public class PublicMatchesController(MatchQueryService queries, StandingsService standings, PublicContext ctx) : Controller
+public class PublicMatchesController(MatchQueryService queries, StandingsService standings, PublicContext ctx, NewsService news) : Controller
 {
     // Un seul segment « 12-demo-1-demo-2 » : ASP.NET découperait « {id}-{slug} » au dernier tiret.
     [HttpGet("/matchs/{key:regex(^[[0-9]]+(-[[a-z0-9-]]+)?$)}")]
@@ -28,7 +28,9 @@ public class PublicMatchesController(MatchQueryService queries, StandingsService
         {
             Detail = detail,
             ShareUrl = url,
-            ShareText = $"{score} · {detail.Competition.Name}, navétane de Nguékokh"
+            ShareText = $"{score} · {detail.Competition.Name}, navétane de Nguékokh",
+            Photos = await news.MatchPhotosAsync(id, ct),
+            News = await news.ForMatchAsync(id, ct)
         });
     }
 

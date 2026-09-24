@@ -18,6 +18,12 @@
     <meta property="og:site_name" content="Kokora">
     <meta name="twitter:card" content="summary">
     <link rel="canonical" href="@Model.ShareUrl">
+    @if (Model.Photos.Count > 0)
+    {
+        <meta property="og:image" content="@($"{Context.Request.Scheme}://{Context.Request.Host}{Model.Photos[0].Url}")">
+        <link rel="stylesheet" href="~/dist/gallery.css" asp-append-version="true">
+        <script type="module" src="~/dist/gallery.js" asp-append-version="true"></script>
+    }
 }
 
 <div class="mx-auto max-w-[760px]">
@@ -95,6 +101,10 @@
                 }
                 <button class="tab" role="tab" :aria-selected="tab === 'stats'" @@click="tab = 'stats'" aria-selected="false">Stats</button>
                 <button class="tab" role="tab" :aria-selected="tab === 'h2h'" @@click="tab = 'h2h'" aria-selected="false">Confrontations</button>
+                @if (Model.Photos.Count > 0)
+                {
+                    <button class="tab" role="tab" :aria-selected="tab === 'photos'" @@click="tab = 'photos'" aria-selected="false">Photos <span class="num text-ink-3">@Model.Photos.Count</span></button>
+                }
             </div>
 
             <!-- Résumé : chronologie -->
@@ -188,6 +198,13 @@
                     }
                 }
             </div>
+
+            @if (Model.Photos.Count > 0)
+            {
+                <div role="tabpanel" x-show="tab === 'photos'" x-cloak>
+                    <partial name="Components/_PhotoGrid" model="Model.Photos" />
+                </div>
+            }
         </div>
 
         <!-- Partage -->
@@ -199,4 +216,12 @@
             </button>
         </div>
     </section>
+
+    @if (Model.News.Count > 0)
+    {
+        <section class="section">
+            <header class="section-head"><span>Infos sur ce match</span></header>
+            @foreach (var n in Model.News) { <partial name="Components/_ArticleRow" model="n" /> }
+        </section>
+    }
 </div>

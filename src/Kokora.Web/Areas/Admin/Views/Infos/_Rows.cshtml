@@ -1,0 +1,41 @@
+@model ArticlesPageVm
+@{
+    var now = DateTimeOffset.UtcNow;
+}
+@foreach (var a in Model.Items)
+{
+    var status = a.Effective(now);
+    <li>
+        <a href="/admin/infos/@a.Id/modifier" class="row !items-start !py-3">
+            <span class="mt-0.5 grid h-12 w-16 flex-none place-items-center overflow-hidden rounded-sm bg-surface-2 text-ink-3">
+                @if (a.CoverUrl is not null)
+                {
+                    <img src="@ArticleAdminService.CoverSmall(a.CoverUrl)" alt="" width="64" height="48" loading="lazy" class="h-full w-full object-cover" data-photo>
+                }
+                else { <icon name="newspaper" /> }
+            </span>
+            <div class="min-w-0 flex-1">
+                <div class="font-semibold leading-snug">@a.Title</div>
+                <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-ink-3">
+                    <span class="badge @Kokora.Web.Areas.Admin.Models.ArticleLabels.Badge(status)">@Kokora.Web.Areas.Admin.Models.ArticleLabels.Of(status)</span>
+                    @if (status == ArticleStatus.Scheduled && a.PublishedAt is { } s) { <span>le @KokoraTime.Long(s).ToLower(KokoraTime.Fr)</span> }
+                    else if (a.PublishedAt is { } p && status == ArticleStatus.Published) { <span>@KokoraTime.ToLocal(p).ToString("d MMM yyyy", KokoraTime.Fr)</span> }
+                    else { <span>modifiée le @KokoraTime.ToLocal(a.UpdatedAt).ToString("d MMM à HH'h'mm", KokoraTime.Fr)</span> }
+                    @if (a.Category is not null) { <span>· @a.Category</span> }
+                    @if (a.Photos > 0) { <span class="inline-flex items-center gap-1">· <icon name="images" />@a.Photos</span> }
+                    @if (a.IsFeatured) { <span class="badge brand">À la une</span> }
+                    @if (a.IsDemo) { <span class="badge warn">Démo</span> }
+                </div>
+            </div>
+            <icon name="chevron-right" class="mt-1 text-ink-3" />
+        </a>
+    </li>
+}
+@if (Model.HasMore)
+{
+    <li hx-get="/admin/infos?statut=@Model.Status&q=@Uri.EscapeDataString(Model.Search ?? "")&page=@(Model.Page + 1)"
+        hx-trigger="revealed" hx-swap="outerHTML" class="row" aria-busy="true">
+        <span class="skeleton h-12 w-16"></span>
+        <span class="grid flex-1 gap-2"><span class="skeleton h-3.5 w-56"></span><span class="skeleton h-3 w-32"></span></span>
+    </li>
+}

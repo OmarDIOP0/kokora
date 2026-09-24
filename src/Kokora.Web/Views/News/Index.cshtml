@@ -1,0 +1,74 @@
+@model NewsIndexVm
+@{
+    var f = Model.Filter;
+    var activeCategory = Model.Categories.FirstOrDefault(c => c.Slug == f.Category);
+    ViewData["Title"] = Model.FilterLabel ?? activeCategory?.Name ?? "Infos";
+    ViewData["Description"] = "Communiqués, résumés de matchs et décisions de la commission du navétane de Nguékokh.";
+    var featured = Model.Featured;
+}
+@section Head {
+    <meta property="og:title" content="@ViewData["Title"] · Kokora">
+    <meta property="og:description" content="@ViewData["Description"]">
+}
+
+<div class="mx-auto max-w-[760px]">
+    <section class="section">
+        <div class="flex items-baseline gap-3 px-4 pb-1 pt-4">
+            <h1 class="text-[28px]">Infos</h1>
+            @if (Model.FilterLabel is not null)
+            {
+                <span class="truncate text-[14px] text-ink-2">@Model.FilterLabel</span>
+                <a href="/infos" class="ml-auto inline-flex items-center gap-1 text-[13px] font-semibold text-brand"><icon name="x" />Tout voir</a>
+            }
+        </div>
+        @if (Model.Categories.Count > 0 && Model.FilterLabel is null)
+        {
+            <nav class="compbar" aria-label="Catégories">
+                <a href="/infos" class="chip" aria-current="@(f.Category is null ? "true" : null)">Tout</a>
+                @foreach (var c in Model.Categories)
+                {
+                    <a href="/infos?categorie=@c.Slug" class="chip" aria-current="@(c.Slug == f.Category ? "true" : null)">@c.Name</a>
+                }
+            </nav>
+        }
+    </section>
+
+    @if (featured is not null)
+    {
+        <section class="section">
+            <a href="@featured.Url" class="news-featured @(featured.CoverUrl is null ? "no-cover" : "")">
+                @if (featured.CoverUrl is not null)
+                {
+                    <img src="@featured.CoverUrl" alt="" width="1600" height="900" class="aspect-video w-full object-cover" data-photo fetchpriority="high">
+                }
+                <div class="px-4 pb-4 pt-3">
+                    <div class="news-meta">
+                        <span class="text-accent">À la une</span>
+                        @if (featured.Category is not null) { <span aria-hidden="true">·</span><span class="text-brand">@featured.Category</span> }
+                        <span aria-hidden="true">·</span>
+                        <time datetime="@featured.PublishedAt.ToString("O")" data-rel>@KokoraTime.ToLocal(featured.PublishedAt).ToString("d MMM", KokoraTime.Fr)</time>
+                    </div>
+                    <h2 class="mt-1 text-[26px] leading-[1.08] md:text-[32px]">@featured.Title</h2>
+                    @if (featured.Summary is not null) { <p class="mt-2 text-[15px] text-ink-2">@featured.Summary</p> }
+                </div>
+            </a>
+        </section>
+    }
+
+    <section class="section">
+        @if (featured is not null && Model.Page.Items.Count > 0)
+        {
+            <header class="section-head"><span>Dernières infos</span></header>
+        }
+        @if (Model.Page.Items.Count == 0 && featured is null)
+        {
+            <div class="empty">
+                <strong>Aucune info pour le moment</strong>
+                Les communiqués de l'ODCAV, les résumés de matchs et les décisions de la commission seront publiés ici.
+            </div>
+        }
+        <div id="news-list">
+            <partial name="_ArticleRows" model="Model.Page" />
+        </div>
+    </section>
+</div>

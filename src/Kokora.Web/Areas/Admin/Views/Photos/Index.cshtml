@@ -1,0 +1,32 @@
+@model List<MatchPhotoItem>
+@{
+    ViewData["Title"] = "Photos des matchs";
+}
+<div class="page-head">
+    <div>
+        <p class="label">Contenu</p>
+        <h1>Photos des matchs</h1>
+        <p class="mt-1 max-w-[60ch] text-[14px] text-ink-2">Les photos apparaissent dans l'onglet « Photos » de la page du match.</p>
+    </div>
+</div>
+<section class="section">
+    @if (Model.Count == 0)
+    {
+        <div class="empty"><strong>Aucun match joué</strong>Les matchs de la saison de travail apparaîtront ici dès leur coup d'envoi.</div>
+    }
+    <ul>
+        @foreach (var m in Model)
+        {
+            <li>
+                <a href="/admin/matchs/@m.Id/photos" class="row">
+                    <div class="min-w-0 flex-1">
+                        <div class="truncate font-semibold">@m.Title</div>
+                        <div class="truncate text-[13px] text-ink-3">@m.Competition@(m.KickoffAt is { } k ? " · " + KokoraTime.ToLocal(k).ToString("d MMM", KokoraTime.Fr) : "")</div>
+                    </div>
+                    @if (m.Photos > 0) { <span class="badge brand"><icon name="images" />@m.Photos</span> }
+                    <icon name="chevron-right" class="text-ink-3" />
+                </a>
+            </li>
+        }
+    </ul>
+</section>

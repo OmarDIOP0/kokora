@@ -2,6 +2,7 @@ using Kokora.Application.Abstractions;
 using Kokora.Application.Common;
 using Kokora.Domain.Clubs;
 using Kokora.Domain.Competitions;
+using Kokora.Domain.Content;
 using Kokora.Domain.Enums;
 using Kokora.Domain.Matches;
 using Kokora.Domain.Rules;
@@ -184,6 +185,78 @@ public class DemoDataService(IAppDbContext db)
             db.Phases.Add(new Phase { Competition = c, Name = "Tableau final", Type = PhaseType.Knockout, Order = 1, IsDemo = true });
 
         await db.SaveChangesAsync(ct);
+        await SeedArticlesAsync(clubs, ct);
+    }
+
+    /// <summary>Quelques infos fictives (titres marqués « démo ») pour voir la page Infos remplie.</summary>
+    private async Task SeedArticlesAsync(List<Club> clubs, CancellationToken ct)
+    {
+        async Task<ArticleCategory> Category(string name)
+        {
+            var slug = Slug.From(name);
+            var cat = await db.ArticleCategories.FirstOrDefaultAsync(c => c.Slug == slug, ct);
+            if (cat is not null) return cat;
+            cat = new ArticleCategory { Name = name, Slug = slug, Order = 90, IsDemo = true };
+            db.ArticleCategories.Add(cat);
+            return cat;
+        }
+        var final = await db.Matches.Include(m => m.Round).FirstAsync(m => m.IsDemo && m.Round != null && m.Round.Kind == RoundKind.Final, ct);
+        var semi = await db.Matches.Include(m => m.Round)
+            .FirstAsync(m => m.IsDemo && m.Round != null && m.Round.Kind == RoundKind.SemiFinal && m.HomePenalties != null, ct);
+        var tagFinale = new Tag { Name = "Finale (démo)", Slug = "finale-demo", IsDemo = true };
+        var tagZone = new Tag { Name = "Zone 5A (démo)", Slug = "zone-5a-demo", IsDemo = true };
+        var now = DateTimeOffset.UtcNow;
+        const string note = "<p><em>Texte fictif de démonstration : il sera supprimé avec les autres données de démo.</em></p>";
+
+        Article Make(string title, string category, string body, int hoursAgo, string? summary = null) => new()
+        {
+            Title = title, Slug = Slug.From(title, 100), Summary = summary, Body = body + note,
+            Status = ArticleStatus.Published, PublishedAt = now.AddHours(-hoursAgo), AuthorName = "Rédaction (démo)", IsDemo = true
+        };
+
+        var communique = Make("Finale des 4 Grandes Zone 5A : le programme (démo)", "Communiqués",
+            "<p>La finale des 4 Grandes de la Zone 5A opposera <strong>ASC Démo 1</strong> à <strong>ASC Démo 5</strong>.</p>" +
+            "<h2>Organisation</h2><ul><li>Ouverture des portes deux heures avant le coup d'envoi.</li>" +
+            "<li>Les supporters sont invités à respecter les consignes des organisateurs.</li></ul>" +
+            "<blockquote>Le fair-play reste la priorité de la commission d'organisation.</blockquote>", 3,
+            "Horaires, accès au stade et consignes pour la finale de dimanche.");
+        communique.Category = await Category("Communiqués");
+        communique.IsFeatured = true;
+        communique.IsImportant = true;
+        communique.Clubs = [clubs[0], clubs[4]];
+        communique.Matches = [final];
+        communique.Tags = [tagFinale, tagZone];
+
+        var resume = Make("ASC Démo 1 passe aux tirs au but (démo)", "Résumés de matchs",
+            "<p>Au terme d'une demi-finale disputée, <strong>ASC Démo 1</strong> a eu besoin des tirs au but pour écarter " +
+            "<strong>ASC Démo 6</strong> (1-1, 4 tirs au but à 3).</p><p>Le gardien a arrêté la dernière tentative adverse.</p>", 30);
+        resume.Category = await Category("Résumés de matchs");
+        resume.Clubs = [clubs[0], clubs[5]];
+        resume.Matches = [semi];
+        resume.Tags = [tagZone];
+
+        var commission = Make("Décisions de la commission de discipline (démo)", "Commission",
+            "<p>Réunie en séance ordinaire, la commission a examiné les rapports des arbitres de la dernière journée.</p>" +
+            "<ol><li>Un match de suspension pour un joueur exclu.</li><li>Avertissement adressé à une équipe pour retard.</li></ol>", 52);
+        commission.Category = await Category("Commission");
+
+        var portrait = Make("Portrait : le capitaine d'ASC Démo 3 (démo)", "Portraits",
+            "<p>Portrait fictif d'un capitaine, utilisé pour montrer la mise en page d'un article plus long.</p>" +
+            string.Concat(Enumerable.Range(1, 4).Select(i => $"<p>Paragraphe de démonstration n°{i}. Le texte d'un article s'affiche " +
+                "sur une colonne de lecture confortable, avec des intertitres, des listes et des citations.</p>")), 96);
+        portrait.Category = await Category("Portraits");
+        portrait.Clubs = [clubs[2]];
+
+        var draft = Make("Présentation des arbitres de la saison (brouillon démo)", "Annonces", "<p>Brouillon non publié.</p>", 0);
+        draft.Status = ArticleStatus.Draft;
+        draft.PublishedAt = null;
+        var scheduled = Make("Programmée : ouverture des inscriptions (démo)", "Annonces", "<p>Info programmée pour plus tard.</p>", 0);
+        scheduled.Status = ArticleStatus.Scheduled;
+        scheduled.PublishedAt = now.AddDays(2);
+        scheduled.Category = draft.Category = await Category("Annonces");
+
+        db.Articles.AddRange(communique, resume, commission, portrait, draft, scheduled);
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>Simule un résultat et ses événements (buteurs, passeurs, cartons) de façon reproductible.</summary>
@@ -237,6 +310,11 @@ public class DemoDataService(IAppDbContext db)
     /// <summary>Supprime toutes les données marquées démo (dans l'ordre imposé par les clés étrangères).</summary>
     public async Task PurgeAsync(CancellationToken ct = default)
     {
+        await db.Comments.Where(c => c.Article.IsDemo).ExecuteDeleteAsync(ct);
+        await db.Photos.Where(p => p.Article != null && p.Article.IsDemo).ExecuteDeleteAsync(ct);
+        await db.Articles.Where(a => a.IsDemo).ExecuteDeleteAsync(ct);
+        await db.Tags.Where(t => t.IsDemo).ExecuteDeleteAsync(ct);
+        await db.ArticleCategories.Where(c => c.IsDemo).ExecuteDeleteAsync(ct);
         await db.MatchEvents.Where(e => e.IsDemo || e.Match.IsDemo).ExecuteDeleteAsync(ct);
         await db.LineupEntries.Where(l => l.IsDemo || l.Match.IsDemo).ExecuteDeleteAsync(ct);
         await db.Predictions.Where(p => p.Match.IsDemo).ExecuteDeleteAsync(ct);
@@ -244,7 +322,7 @@ public class DemoDataService(IAppDbContext db)
         await db.Qualifications.Where(q => q.IsDemo || q.TargetPhase.IsDemo).ExecuteDeleteAsync(ct);
         await db.Protests.Where(p => p.IsDemo || p.Match.IsDemo).ExecuteDeleteAsync(ct);
         await db.Suspensions.Where(s => s.IsDemo || s.Player.IsDemo).ExecuteDeleteAsync(ct);
-        await db.Photos.Where(p => p.IsDemo).ExecuteDeleteAsync(ct);
+        await db.Photos.Where(p => p.IsDemo || (p.Match != null && p.Match.IsDemo)).ExecuteDeleteAsync(ct);
         await db.Matches.Where(m => m.IsDemo).ExecuteDeleteAsync(ct);
         await db.PointAdjustments.Where(p => p.IsDemo || p.Group.IsDemo).ExecuteDeleteAsync(ct);
         await db.GroupTeams.Where(t => t.Group.IsDemo || t.Club.IsDemo).ExecuteDeleteAsync(ct);

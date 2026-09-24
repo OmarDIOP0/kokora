@@ -1,4 +1,6 @@
 using Kokora.Application.Abstractions;
+using Kokora.Application.Common;
+using Kokora.Domain.Content;
 using Kokora.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +27,14 @@ public class DbInitializer(
         foreach (var role in Roles.All)
             if (!await roles.RoleExistsAsync(role))
                 await roles.CreateAsync(new IdentityRole(role));
+
+        // Catégories d'infos proposées au premier démarrage (renommables et supprimables ensuite).
+        if (!await db.ArticleCategories.AnyAsync(ct) && !await db.Articles.AnyAsync(ct))
+        {
+            string[] names = ["Communiqués", "Résumés de matchs", "Commission", "Portraits", "Annonces"];
+            db.ArticleCategories.AddRange(names.Select((n, i) => new ArticleCategory { Name = n, Slug = Slug.From(n), Order = i + 1 }));
+            await db.SaveChangesAsync(ct);
+        }
 
         var login = config["Bootstrap:SuperAdmin:Login"];
         var password = config["Bootstrap:SuperAdmin:Password"];

@@ -1,0 +1,17 @@
+@model ArticleCardVm
+@* Ligne d'info : texte à gauche, vignette à droite (si image). Dense, comme une liste de résultats. *@
+<a href="@Model.Url" class="news-row">
+    <div class="min-w-0">
+        <div class="news-meta">
+            @if (Model.IsImportant) { <span class="text-loss">Important</span><span aria-hidden="true">·</span> }
+            @if (Model.Category is not null) { <span class="text-brand">@Model.Category</span><span aria-hidden="true">·</span> }
+            <time datetime="@Model.PublishedAt.ToString("O")" data-rel>@KokoraTime.ToLocal(Model.PublishedAt).ToString("d MMM", KokoraTime.Fr)</time>
+        </div>
+        <h3 class="news-title">@Model.Title</h3>
+        @if (Model.Summary is not null && ViewData["Compact"] is not true) { <p class="news-summary">@Model.Summary</p> }
+    </div>
+    @if (Model.CoverSmallUrl is not null)
+    {
+        <img src="@Model.CoverSmallUrl" alt="" width="640" height="360" loading="lazy" class="news-thumb" data-photo>
+    }
+</a>

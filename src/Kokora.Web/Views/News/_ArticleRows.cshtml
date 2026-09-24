@@ -1,0 +1,14 @@
+@model NewsPageData
+@foreach (var a in Model.Items)
+{
+    <partial name="Components/_ArticleRow" model="a" />
+}
+@if (Model.HasMore)
+{
+    @* Défilement infini : ce bloc se remplace par la page suivante quand il devient visible. *@
+    <div hx-get="@Model.NextUrl" hx-trigger="revealed" hx-swap="outerHTML" class="news-row" aria-busy="true">
+        <div class="grid gap-2"><span class="skeleton h-3 w-24"></span><span class="skeleton h-4 w-64 max-w-full"></span><span class="skeleton h-3 w-48"></span></div>
+        <span class="skeleton news-thumb"></span>
+    </div>
+    <noscript><a href="@Model.NextUrl" class="row justify-center font-semibold text-brand">Infos plus anciennes</a></noscript>
+}

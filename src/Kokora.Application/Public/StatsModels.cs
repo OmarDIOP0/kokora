@@ -57,6 +57,7 @@ public record TeamPageData(
     IReadOnlyList<PlayerStatRow> Scorers,
     TeamStatRow? Totals,
     IReadOnlyList<SuspensionRowVm> Suspended,
-    IReadOnlyList<char> Form);
+    IReadOnlyList<char> Form,
+    IReadOnlyList<ArticleCardVm> News);
 
 public record SearchResults(IReadOnlyList<TeamVm> Teams, IReadOnlyList<(PlayerVm Player, TeamVm? Team)> Players);

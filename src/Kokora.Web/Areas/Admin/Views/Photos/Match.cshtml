@@ -1,0 +1,20 @@
+@model MatchPhotosVm
+@{
+    ViewData["Title"] = "Photos · " + Model.Title;
+    var canEditMatch = User.IsInRole(Kokora.Application.Abstractions.Roles.SuperAdmin) || User.IsInRole(Kokora.Application.Abstractions.Roles.Admin);
+}
+<div class="page-head">
+    <div class="min-w-0">
+        <nav class="crumbs"><a href="/admin/photos">Photos des matchs</a></nav>
+        <h1>@Model.Title</h1>
+        <p class="mt-1 text-[14px] text-ink-2">@Model.Subtitle@(Model.KickoffAt is { } k ? " · " + KokoraTime.Long(k) : "")</p>
+    </div>
+    <div class="flex gap-2">
+        @if (canEditMatch) { <a href="/admin/matchs/@Model.MatchId/modifier" class="btn btn-secondary btn-sm"><icon name="calendar-days" />Match</a> }
+        <a href="/matchs/@Model.MatchId" target="_blank" class="btn btn-secondary btn-sm"><icon name="external-link" />Voir</a>
+    </div>
+</div>
+<section class="section">
+    <header class="section-head"><span>Galerie</span>@if (Model.Gallery.Photos.Count > 0) { <span class="sub">@Model.Gallery.Photos.Count</span> }</header>
+    <partial name="_Gallery" model="Model.Gallery" />
+</section>

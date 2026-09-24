@@ -223,3 +223,65 @@ public class ImportPageVm
     public ImportReport? Report { get; init; }
     public string SeasonName { get; init; } = "";
 }
+
+// ---------------------------------------------------------------- Infos
+
+public class ArticlesPageVm
+{
+    public List<ArticleListItem> Items { get; init; } = [];
+    public int Total { get; init; }
+    public int Page { get; init; }
+    public string? Status { get; init; }
+    public string? Search { get; init; }
+    public ArticleCounts Counts { get; init; } = new(0, 0, 0, 0, 0);
+    public bool HasMore => Page * ArticleAdminService.PageSize < Total;
+}
+
+public class ArticleFormVm
+{
+    public ArticleInput Input { get; set; } = new();
+    public IFormFile? Cover { get; set; }
+    public Kokora.Domain.Content.Article? Existing { get; set; }
+    public List<SelectListItem> Categories { get; set; } = [];
+    public List<SelectListItem> Tags { get; set; } = [];
+    public List<SelectListItem> Clubs { get; set; } = [];
+    public List<SelectListItem> Matches { get; set; } = [];
+    public List<PhotoItem> Photos { get; set; } = [];
+}
+
+public class CategoriesPageVm
+{
+    public List<CategoryItem> Items { get; init; } = [];
+    public CategoryInput NewCategory { get; init; } = new();
+}
+
+/// <summary>Galerie éditable (partagée entre infos et matchs).</summary>
+public record GalleryVm(PhotoOwner Owner, List<PhotoItem> Photos)
+{
+    public string OwnerQuery => Owner.ArticleId is { } a ? $"info={a}" : $"match={Owner.MatchId}";
+}
+
+public class MatchPhotosVm
+{
+    public int MatchId { get; init; }
+    public string Title { get; init; } = "";
+    public string Subtitle { get; init; } = "";
+    public DateTimeOffset? KickoffAt { get; init; }
+    public required GalleryVm Gallery { get; init; }
+}
+
+public record MatchPhotoItem(int Id, string Title, string Competition, DateTimeOffset? KickoffAt, int Photos);
+
+public static class ArticleLabels
+{
+    public static string Of(ArticleStatus s) => s switch
+    {
+        ArticleStatus.Draft => "Brouillon", ArticleStatus.Scheduled => "Programmée",
+        ArticleStatus.Published => "Publiée", _ => "Archivée"
+    };
+
+    public static string Badge(ArticleStatus s) => s switch
+    {
+        ArticleStatus.Published => "win", ArticleStatus.Scheduled => "brand", ArticleStatus.Draft => "warn", _ => ""
+    };
+}

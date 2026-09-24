@@ -1,0 +1,155 @@
+@model ArticleFormVm
+@inject Kokora.Application.Abstractions.IHtmlCleaner Cleaner
+@{
+    var i = Model.Input;
+    var a = Model.Existing;
+    ViewData["Title"] = a is null ? "Nouvelle info" : a.Title;
+    var now = DateTimeOffset.UtcNow;
+    var live = a is not null && ArticleAdminService.IsLive(a, now);
+    var modes = new (PublishMode Mode, string Label, string Hint)[]
+    {
+        (PublishMode.Draft, "Brouillon", "Visible uniquement par l'équipe."),
+        (PublishMode.Now, live ? "En ligne" : "Publier maintenant", live ? "Reste en ligne avec sa date d'origine." : "Visible immédiatement sur le site."),
+        (PublishMode.Scheduled, "Programmer", "Mise en ligne automatique à la date choisie."),
+        (PublishMode.Archived, "Archiver", "Retirée du site, conservée ici.")
+    };
+    var modeError = ViewData.ModelState.TryGetValue("Input.PublishAtLocal", out var me) && me.Errors.Count > 0;
+    var bodyError = ViewData.ModelState.TryGetValue("Input.Body", out var be) ? be.Errors.FirstOrDefault()?.ErrorMessage : null;
+}
+@section Head {
+    <link rel="stylesheet" href="~/dist/editor.css" asp-append-version="true">
+    <script type="module" src="~/dist/editor.js" asp-append-version="true"></script>
+}
+
+<div class="page-head">
+    <div class="min-w-0">
+        <nav class="crumbs"><a href="/admin/infos">Infos</a></nav>
+        <h1 class="line-clamp-2">@ViewData["Title"]</h1>
+    </div>
+    @if (a is not null)
+    {
+        <a href="/infos/@a.Slug" target="_blank" class="btn btn-secondary btn-sm">
+            <icon name="@(live ? "external-link" : "eye")" />@(live ? "Voir sur le site" : "Aperçu")
+        </a>
+    }
+</div>
+
+<form method="post" action="/admin/infos/enregistrer" enctype="multipart/form-data" novalidate data-article-form
+      x-data="{ mode: '@((int)i.Mode)' }">
+    <input type="hidden" asp-for="Input.Id">
+    <div asp-validation-summary="ModelOnly" class="error-summary mb-3"></div>
+
+    <div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <!-- Texte -->
+        <div class="min-w-0">
+            <section class="section">
+                <div class="form-grid">
+                    <k-field asp-for="Input.Title" placeholder="Ex. Programme de la 3e journée" autofocus="@(a is null)" />
+                    <k-field asp-for="Input.Summary" type="textarea"
+                             hint="Deux lignes affichées dans la liste des infos et lors d'un partage. Facultatif : sinon, le début du texte." />
+                    <div class="field">
+                        <label id="body-label">Texte</label>
+                        <div class="editor-wrap @(bodyError is null ? "" : "is-invalid")">
+                            <div data-editor="Input_Body" aria-labelledby="body-label">@Html.Raw(Cleaner.Clean(i.Body))</div>
+                        </div>
+                        <input type="hidden" id="Input_Body" name="Input.Body" value="@i.Body">
+                        @if (bodyError is not null) { <span class="error" role="alert">@bodyError</span> }
+                        else { <span class="hint">Intertitres, gras, listes, citations, liens et images. Le collage depuis WhatsApp ou Word est nettoyé automatiquement.</span> }
+                        <noscript><p class="error">L'éditeur nécessite JavaScript.</p></noscript>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Publication et classement -->
+        <div class="grid gap-3 lg:sticky lg:top-4">
+            <section class="section">
+                <header class="section-head"><span>Publication</span>
+                    @if (a is not null)
+                    {
+                        var st = live ? ArticleStatus.Published : a.Status;
+                        <span class="badge ml-auto @ArticleLabels.Badge(st)">@ArticleLabels.Of(st)</span>
+                    }
+                </header>
+                <fieldset class="grid px-2 py-2" aria-label="Publication">
+                    @foreach (var m in modes)
+                    {
+                        <label class="check !items-start rounded-sm px-2 py-2 hover:bg-surface-2">
+                            <input type="radio" name="Input.Mode" value="@((int)m.Mode)" x-model="mode" checked="@(i.Mode == m.Mode)" class="mt-0.5">
+                            <span class="grid"><span class="font-semibold">@m.Label</span><span class="text-[12.5px] text-ink-3">@m.Hint</span></span>
+                        </label>
+                    }
+                </fieldset>
+                <div x-show="mode === '@((int)PublishMode.Scheduled)'" x-cloak="@(i.Mode == PublishMode.Scheduled || modeError ? null : "")" class="px-4 pb-4">
+                    <k-field asp-for="Input.PublishAtLocal" type="datetime" hint="Heure de Dakar." />
+                </div>
+                @if (live && a!.PublishedAt is { } pub)
+                {
+                    <p class="border-t border-line px-4 py-2.5 text-[13px] text-ink-2">En ligne depuis le @KokoraTime.Long(pub)</p>
+                }
+                <div class="form-actions">
+                    <button class="btn btn-primary flex-1">
+                        <span x-text="({ '1': 'Enregistrer le brouillon', '2': '@(live ? "Enregistrer" : "Publier")', '3': 'Programmer', '4': 'Archiver' })[mode]">Enregistrer</span>
+                    </button>
+                </div>
+            </section>
+
+            <section class="section">
+                <header class="section-head"><span>Classement</span></header>
+                <div class="form-grid">
+                    <k-field asp-for="Input.CategoryId" items="Model.Categories" empty="Sans catégorie" />
+                    <k-field asp-for="Input.Tags" items="Model.Tags" type="multiselect" create="true" hint="Choisissez ou tapez un nouveau mot-clé puis Entrée." />
+                    <k-field asp-for="Input.ClubIds" items="Model.Clubs" type="multiselect" hint="L'info apparaît sur la page de ces équipes." />
+                    <k-field asp-for="Input.MatchIds" items="Model.Matches" type="multiselect" hint="L'info apparaît sur la page de ces matchs." />
+                </div>
+            </section>
+
+            <section class="section">
+                <header class="section-head"><span>Image de couverture</span></header>
+                @if (a?.CoverImagePath is { } cover)
+                {
+                    <img src="@ArticleAdminService.CoverSmall(cover)" alt="" width="640" height="360" class="aspect-video w-full border-b border-line object-cover">
+                }
+                <div class="form-grid">
+                    <k-field asp-for="Cover" label="@(a?.CoverImagePath is null ? "Ajouter une image" : "Remplacer l'image")" type="file"
+                             accept="image/png,image/jpeg,image/webp" hint="Format paysage conseillé. 8 Mo max, redimensionnée automatiquement." />
+                    @if (a?.CoverImagePath is not null) { <k-field asp-for="Input.RemoveCover" /> }
+                </div>
+            </section>
+
+            <section class="section">
+                <header class="section-head"><span>Options</span></header>
+                <div class="form-grid !gap-1">
+                    <k-field asp-for="Input.IsFeatured" />
+                    <k-field asp-for="Input.IsImportant" />
+                    <k-field asp-for="Input.AllowComments" />
+                </div>
+                @if (a is not null)
+                {
+                    <div class="form-grid border-t border-line">
+                        <k-field asp-for="Input.Slug" hint="Changer l'adresse casse les liens déjà partagés." />
+                    </div>
+                }
+                @if (a is not null)
+                {
+                    <div class="form-actions">
+                        <button formaction="/admin/infos/@a.Id/supprimer" formnovalidate class="btn btn-ghost btn-sm text-loss"
+                                data-confirm="Supprimer définitivement « @a.Title » et ses photos ?"><icon name="trash-2" />Supprimer l'info</button>
+                    </div>
+                }
+            </section>
+        </div>
+    </div>
+</form>
+
+<section class="section mt-3" id="photos">
+    <header class="section-head"><span>Galerie photos</span>@if (Model.Photos.Count > 0) { <span class="sub">@Model.Photos.Count</span> }</header>
+    @if (a is null)
+    {
+        <div class="empty !py-6">Enregistrez d'abord l'info (en brouillon) pour ajouter des photos.</div>
+    }
+    else
+    {
+        <partial name="_Gallery" model="new GalleryVm(PhotoOwner.Article(a.Id), Model.Photos)" />
+    }
+</section>

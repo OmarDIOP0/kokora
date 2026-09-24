@@ -1,6 +1,7 @@
 using Kokora.Application.Abstractions;
 using Kokora.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Kokora.Web.Tests;
 
@@ -64,5 +65,51 @@ public class SnapshotTests(DemoDataFixture fx)
         var scorer = await fx.QueryAsync(db => db.MatchEvents.Where(e => e.IsDemo && e.Type == Kokora.Domain.Enums.MatchEventType.Goal)
             .GroupBy(e => e.Player!.Slug).OrderByDescending(g => g.Count()).Select(g => g.Key).FirstAsync());
         await File.WriteAllTextAsync(Path.Combine(dir, "public-joueur.html"), await anonymous.GetStringAsync($"/joueurs/{scorer}"));
+
+        // Infos : couverture et galerie avec des images générées (écrites dans wwwroot/uploads, ignoré par git).
+        var featured = await fx.QueryAsync(db => db.Articles.Where(a => a.IsDemo && a.IsFeatured).Select(a => new { a.Id, a.Slug }).FirstAsync());
+        var draft = await fx.QueryAsync(db => db.Articles.Where(a => a.IsDemo && a.Status == ArticleStatus.Draft).Select(a => a.Id).FirstAsync());
+        using (var scope = fx.Factory.Services.CreateScope())
+        {
+            var images = scope.ServiceProvider.GetRequiredService<IImageStore>();
+            var db = scope.ServiceProvider.GetRequiredService<IAppDbContext>();
+            var article = await db.Articles.FirstAsync(a => a.Id == featured.Id);
+            if (article.CoverImagePath is null)
+            {
+                article.CoverImagePath = (await images.SaveAsync(new MemoryStream(FakePhoto(1600, 900, 0)), "infos", "snapshot", ImagePresets.Cover))[0];
+                await db.SaveChangesAsync();
+                var photos = scope.ServiceProvider.GetRequiredService<Kokora.Application.Admin.PhotoAdminService>();
+                var files = Enumerable.Range(1, 5).Select(i => ($"p{i}.png", (Func<Stream>)(() => new MemoryStream(FakePhoto(1200, 800, i))))).ToList();
+                await photos.AddAsync(Kokora.Application.Admin.PhotoOwner.Article(featured.Id), files, "Démo");
+                await photos.AddAsync(Kokora.Application.Admin.PhotoOwner.Match(played), files, null);
+            }
+        }
+        var newsPages = new Dictionary<string, string>
+        {
+            ["public-infos"] = "/infos", ["public-infos-categorie"] = "/infos?categorie=commission", ["public-article"] = $"/infos/{featured.Slug}",
+            ["public-match-photos"] = $"/matchs/{played}",
+        };
+        foreach (var (name, url) in newsPages)
+            await File.WriteAllTextAsync(Path.Combine(dir, name + ".html"), await anonymous.GetStringAsync(url));
+        var editor = fx.Factory.ClientAs(RolesForTests.Editor);
+        var adminNews = new Dictionary<string, string>
+        {
+            ["infos"] = "/admin/infos", ["info-form"] = $"/admin/infos/{featured.Id}/modifier", ["info-brouillon"] = $"/admin/infos/{draft}/modifier",
+            ["info-nouvelle"] = "/admin/infos/nouvelle", ["info-categories"] = "/admin/infos/categories", ["photos"] = "/admin/photos",
+            ["photos-match"] = $"/admin/matchs/{played}/photos",
+        };
+        foreach (var (name, url) in adminNews)
+            await File.WriteAllTextAsync(Path.Combine(dir, name + ".html"), await editor.GetStringAsync(url));
+    }
+
+    /// <summary>Image de test : bandes de couleur, sans aucun contenu réel.</summary>
+    private static byte[] FakePhoto(int w, int h, int seed)
+    {
+        using var bmp = new SkiaSharp.SKBitmap(w, h);
+        using var canvas = new SkiaSharp.SKCanvas(bmp);
+        SkiaSharp.SKColor[] palette = [new(0x0E, 0x6B, 0x3A), new(0x9A, 0x7A, 0x2E), new(0x26, 0x32, 0x38), new(0xC6, 0x28, 0x28), new(0x15, 0x65, 0xC0), new(0x55, 0x8B, 0x2F)];
+        for (var i = 0; i < 6; i++)
+            canvas.DrawRect(0, i * h / 6f, w, h / 6f + 1, new SkiaSharp.SKPaint { Color = palette[(i + seed) % palette.Length] });
+        return bmp.Encode(SkiaSharp.SKEncodedImageFormat.Png, 90).ToArray();
     }
 }

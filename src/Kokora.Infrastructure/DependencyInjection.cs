@@ -41,6 +41,7 @@ public static class DependencyInjection
 
         services.AddSingleton<IImageStore, Storage.SkiaImageStore>();
         services.AddSingleton<IPlayerFileReader, Storage.PlayerFileReader>();
+        services.AddSingleton<IHtmlCleaner, Content.HtmlCleaner>();
         services.AddScoped<DbInitializer>();
         return services;
     }

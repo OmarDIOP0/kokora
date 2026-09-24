@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Kokora.Application.Public;
 
 /// <summary>Équipes, joueurs et recherche (pages publiques).</summary>
-public class DirectoryService(IAppDbContext db, StatsService stats, StandingsService standings, MatchQueryService matches)
+public class DirectoryService(IAppDbContext db, StatsService stats, StandingsService standings, MatchQueryService matches, NewsService news)
 {
     private static readonly MatchStatus[] Played = [MatchStatus.Finished, MatchStatus.Forfeit, MatchStatus.UnderReview, MatchStatus.Abandoned];
 
@@ -60,7 +60,7 @@ public class DirectoryService(IAppDbContext db, StatsService stats, StandingsSer
         var suspended = seasonStats?.Suspended.Where(s => s.Team.Id == club.Id).ToList() ?? [];
 
         return new TeamPageData(team, club.Neighborhood, club.Zone, club.FoundedYear, season?.Name, squad,
-            upcoming, results, tables, scorers, totals, suspended, form);
+            upcoming, results, tables, scorers, totals, suspended, form, await news.ForClubAsync(club.Id, 4, ct));
     }
 
     public async Task<PlayerPageData?> PlayerAsync(string slug, CancellationToken ct = default)

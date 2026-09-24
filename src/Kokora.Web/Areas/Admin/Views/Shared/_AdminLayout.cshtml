@@ -26,6 +26,7 @@
     <link rel="stylesheet" href="~/dist/app.css" asp-append-version="true">
     <script type="module" src="~/dist/core.js" asp-append-version="true"></script>
     <script type="module" src="~/dist/admin.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Head", required: false)
 </head>
 <body data-flash="@flash">
     <div class="admin-shell" x-data="{ open: false }" @@keydown.escape.window="open = false">

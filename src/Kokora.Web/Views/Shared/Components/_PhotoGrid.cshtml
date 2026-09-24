@@ -1,0 +1,13 @@
+@model IReadOnlyList<GalleryPhotoVm>
+@* Grille de vignettes ; le clic ouvre la visionneuse (GLightbox, chargée par gallery.js). *@
+<ul class="photo-grid">
+    @foreach (var p in Model)
+    {
+        var caption = string.Join(" · ", new[] { p.Caption, p.Credit is null ? null : "Photo : " + p.Credit }.Where(x => x is not null));
+        <li>
+            <a href="@p.Url" class="glightbox" data-gallery="photos" data-description="@caption" aria-label="@(p.Caption ?? "Agrandir la photo")">
+                <img src="@p.ThumbUrl" alt="@p.Caption" width="400" height="400" loading="lazy" data-photo>
+            </a>
+        </li>
+    }
+</ul>

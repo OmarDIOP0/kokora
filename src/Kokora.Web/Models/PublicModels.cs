@@ -41,6 +41,8 @@ public class MatchPageVm
     public required MatchDetailVm Detail { get; init; }
     public required string ShareUrl { get; init; }
     public required string ShareText { get; init; }
+    public IReadOnlyList<GalleryPhotoVm> Photos { get; init; } = [];
+    public IReadOnlyList<ArticleCardVm> News { get; init; } = [];
 }
 
 public class StandingsPageVm
@@ -49,4 +51,20 @@ public class StandingsPageVm
     public required CompetitionVm Competition { get; init; }
     public IReadOnlyList<PhaseStandingsVm> Phases { get; init; } = [];
     public PhaseStandingsVm? Current { get; init; }
+}
+
+public class NewsIndexVm
+{
+    public required NewsFilter Filter { get; init; }
+    public required NewsPageData Page { get; init; }
+    public ArticleCardVm? Featured { get; init; }
+    public IReadOnlyList<CategoryVm> Categories { get; init; } = [];
+    /// <summary>Libellé du filtre mot-clé ou équipe (bandeau « Filtré par »).</summary>
+    public string? FilterLabel { get; init; }
+}
+
+public class ArticlePageVm
+{
+    public required ArticleDetailVm Article { get; init; }
+    public required string ShareUrl { get; init; }
 }

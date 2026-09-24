@@ -1,0 +1,44 @@
+@model CategoriesPageVm
+@{
+    ViewData["Title"] = "Catégories";
+}
+<div class="page-head">
+    <div>
+        <nav class="crumbs"><a href="/admin/infos">Infos</a></nav>
+        <h1>Catégories</h1>
+        <p class="mt-1 max-w-[60ch] text-[14px] text-ink-2">Affichées comme filtres sur la page Infos, dans cet ordre. Supprimer une catégorie ne supprime pas ses infos.</p>
+    </div>
+</div>
+
+<div class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+    <section class="section">
+        @if (Model.Items.Count == 0) { <div class="empty">Aucune catégorie.</div> }
+        <ul data-sortable="/admin/infos/categories/ordre">
+            @foreach (var c in Model.Items)
+            {
+                <li data-id="@c.Id" class="row gap-2! py-1.5!" x-data="{ edit: false }">
+                    <span class="drag-handle" data-handle aria-label="Déplacer"><icon name="grip-vertical" /></span>
+                    <div class="min-w-0 flex-1" x-show="!edit">
+                        <div class="truncate font-semibold">@c.Name</div>
+                        <div class="text-[12.5px] text-ink-3">@c.Articles info@(c.Articles > 1 ? "s" : "")</div>
+                    </div>
+                    <form method="post" action="/admin/infos/categories/@c.Id/renommer" class="flex min-w-0 flex-1 gap-2" x-show="edit" x-cloak>
+                        <input type="text" name="name" value="@c.Name" maxlength="80" required class="input min-h-10! min-w-0 flex-1" aria-label="Nouveau nom">
+                        <button class="btn btn-primary btn-sm">OK</button>
+                    </form>
+                    <button type="button" class="btn btn-ghost btn-icon" x-show="!edit" @@click="edit = true" aria-label="Renommer"><icon name="pencil" /></button>
+                    <form method="post" action="/admin/infos/categories/@c.Id/supprimer" data-confirm="Supprimer la catégorie « @c.Name » ?" x-show="!edit">
+                        <button class="btn btn-ghost btn-icon" aria-label="Supprimer"><icon name="trash-2" /></button>
+                    </form>
+                </li>
+            }
+        </ul>
+    </section>
+    <section class="section">
+        <header class="section-head"><span>Nouvelle catégorie</span></header>
+        <form method="post" action="/admin/infos/categories" novalidate>
+            <div class="form-grid"><k-field asp-for="NewCategory.Name" placeholder="Ex. Transferts" /></div>
+            <div class="form-actions"><button class="btn btn-primary btn-sm"><icon name="plus" />Ajouter</button></div>
+        </form>
+    </section>
+</div>

@@ -81,7 +81,7 @@ Connexion : `/compte/connexion` (e-mail ou numéro de téléphone). Rôles :
 | Rôle | Accès |
 |---|---|
 | SuperAdmin, Admin | tout l'admin sportif : saisons, compétitions, phases, poules, tableaux, équipes, joueurs, stades, arbitres, calendrier, données de démo, journal d'audit |
-| Rédacteur | tableau de bord (et les infos, à venir) |
+| Rédacteur | tableau de bord, infos (rédaction, catégories) et photos des matchs ; les sections sportives lui sont masquées |
 
 Parcours type d'une saison :
 
@@ -95,9 +95,17 @@ Parcours type d'une saison :
 8. **Discipline** : suspensions calculées automatiquement d'après les cartons ; ajouter les décisions de la commission (suspension supplémentaire, pénalité ou bonus de points). Classements recalculés aussitôt.
 9. **Qualification** (page d'une phase à élimination) : pour chaque place du premier tour, choisir « 1er de la Poule A », « Vainqueur Demi-finales 2 »… puis « Générer la qualification ». Une équipe choisie à la main sur un match reste prioritaire.
 
+**Infos** (`/admin/infos`, aussi pour les rédacteurs) :
+
+- Éditeur de texte (intertitres, gras, listes, citations, liens, images). Le HTML est nettoyé côté serveur (liste blanche) : un collage depuis WhatsApp ou Word ne peut rien injecter.
+- Publication : brouillon, publier maintenant, **programmer** (mise en ligne automatique à l'heure choisie, heure de Dakar), archiver. L'équipe prévisualise les brouillons sur le site.
+- Catégories (Communiqués, Résumés de matchs, Commission, Portraits, Annonces, créées au premier démarrage, modifiables), mots-clés libres, « À la une », « Info importante ».
+- Liens vers des équipes et des matchs : l'info s'affiche sur leurs pages.
+- Image de couverture et galerie photos (envoi multiple, légende, crédit, ordre par glisser-déposer). Galerie de match : **Photos des matchs**, ou bouton « Photos » sur la page de résultat.
+
 Toutes les modifications sont tracées dans le **journal d'audit** (qui, quand, valeurs avant/après).
 
-**Données de démonstration** : `/admin/demo` crée 17 ASC fictives (« ASC Démo 1 »…), leurs joueurs et deux zonales avec des résultats simulés. Un bouton les supprime toutes sans toucher aux vraies données. Disponible tant qu'aucune vraie saison n'existe pour l'année en cours.
+**Données de démonstration** : `/admin/demo` crée 17 ASC fictives (« ASC Démo 1 »…), leurs joueurs, deux zonales avec des résultats simulés et quelques infos fictives (dont un brouillon et une info programmée). Un bouton les supprime toutes sans toucher aux vraies données. Disponible tant qu'aucune vraie saison n'existe pour l'année en cours.
 
 ## Partie publique
 
@@ -107,6 +115,8 @@ Toutes les modifications sont tracées dans le **journal d'audit** (qui, quand, 
 - `/stats` : buteurs, passeurs, gestes décisifs, meilleures attaques et défenses, clean sheets, fair-play, suspendus et joueurs menacés (par compétition ou toute la saison).
 - `/equipes`, `/equipes/{asc}` : fiche équipe (prochain match, résultats, classement, effectif, graphique des buts) avec bouton « Suivre ».
 - `/joueurs/{joueur}` : fiche joueur (matchs, buts, passes, cartons, suspension en cours).
+- `/infos` : à la une, filtres par catégorie, mot-clé ou équipe, défilement infini ; `/infos/{info}` : article, galerie photos (visionneuse), équipes et matchs cités, partage WhatsApp, aperçu Open Graph avec image.
+- Page d'un match : onglet « Photos » et « Infos sur ce match » ; page d'une équipe : ses dernières infos.
 - `/recherche` : recherche instantanée d'équipes et de joueurs, insensible aux accents.
 - Le choix de compétition est mémorisé (cookie `k-comp`). Classements mis en cache mémoire, invalidés à chaque résultat.
 

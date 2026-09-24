@@ -5,6 +5,8 @@
     var nav = ViewData["AdminNav"] as string;
     string? Current(string key) => nav == key ? "page" : null;
     var season = await AdminSeason.GetAsync();
+    // Les rédacteurs ne gèrent que le contenu : les sections sportives leur sont masquées.
+    var isAdmin = User.IsInRole(Kokora.Application.Abstractions.Roles.SuperAdmin) || User.IsInRole(Kokora.Application.Abstractions.Roles.Admin);
     var seasons = await Db.Seasons.AsNoTracking().OrderByDescending(s => s.Year).Select(s => new { s.Id, s.Name, s.IsCurrent }).ToListAsync();
 }
 <div class="flex h-14 flex-none items-center gap-2 border-b border-line px-4">
@@ -32,19 +34,29 @@
 <nav class="admin-nav flex-1 py-2">
     <a href="/admin" aria-current="@Current("dashboard")"><icon name="layout-dashboard" />Tableau de bord</a>
 
-    <span class="label">Saison</span>
-    <a href="/admin/saisons" aria-current="@Current("saisons")"><icon name="trophy" />Saisons et compétitions</a>
-    <a href="/admin/matchs" aria-current="@Current("matchs")"><icon name="calendar-days" />Calendrier et résultats</a>
-    <a href="/admin/discipline" aria-current="@Current("discipline")"><icon name="gavel" />Discipline</a>
+    @if (isAdmin)
+    {
+        <span class="label">Saison</span>
+        <a href="/admin/saisons" aria-current="@Current("saisons")"><icon name="trophy" />Saisons et compétitions</a>
+        <a href="/admin/matchs" aria-current="@Current("matchs")"><icon name="calendar-days" />Calendrier et résultats</a>
+        <a href="/admin/discipline" aria-current="@Current("discipline")"><icon name="gavel" />Discipline</a>
+    }
 
-    <span class="label">Données</span>
-    <a href="/admin/equipes" aria-current="@Current("equipes")"><icon name="shield" />Équipes (ASC)</a>
-    <a href="/admin/joueurs" aria-current="@Current("joueurs")"><icon name="users" />Joueurs</a>
-    <a href="/admin/lieux" aria-current="@Current("lieux")"><icon name="map-pin" />Stades et arbitres</a>
+    <span class="label">Contenu</span>
+    <a href="/admin/infos" aria-current="@Current("infos")"><icon name="newspaper" />Infos</a>
+    <a href="/admin/photos" aria-current="@Current("photos")"><icon name="images" />Photos des matchs</a>
 
-    <span class="label">Système</span>
-    <a href="/admin/demo" aria-current="@Current("demo")"><icon name="flask-conical" />Données de démo</a>
-    <a href="/admin/audit" aria-current="@Current("audit")"><icon name="history" />Journal d'audit</a>
+    @if (isAdmin)
+    {
+        <span class="label">Données</span>
+        <a href="/admin/equipes" aria-current="@Current("equipes")"><icon name="shield" />Équipes (ASC)</a>
+        <a href="/admin/joueurs" aria-current="@Current("joueurs")"><icon name="users" />Joueurs</a>
+        <a href="/admin/lieux" aria-current="@Current("lieux")"><icon name="map-pin" />Stades et arbitres</a>
+
+        <span class="label">Système</span>
+        <a href="/admin/demo" aria-current="@Current("demo")"><icon name="flask-conical" />Données de démo</a>
+        <a href="/admin/audit" aria-current="@Current("audit")"><icon name="history" />Journal d'audit</a>
+    }
 </nav>
 
 <div class="border-t border-line p-3 pb-[calc(12px+env(safe-area-inset-bottom))]">

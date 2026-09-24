@@ -1,0 +1,40 @@
+@model ArticlesPageVm
+@{
+    ViewData["Title"] = "Infos";
+    var c = Model.Counts;
+    var tabs = new (string? Key, string Label, int Count)[]
+    {
+        (null, "Toutes", c.All), ("brouillons", "Brouillons", c.Drafts), ("programmees", "Programmées", c.Scheduled),
+        ("publiees", "Publiées", c.Published), ("archivees", "Archivées", c.Archived)
+    };
+}
+
+<div class="page-head">
+    <div>
+        <p class="label">Contenu</p>
+        <h1>Infos</h1>
+    </div>
+    <div class="flex flex-wrap gap-2">
+        <a href="/admin/infos/categories" class="btn btn-secondary btn-sm"><icon name="tags" />Catégories</a>
+        <a href="/admin/infos/nouvelle" class="btn btn-primary btn-sm"><icon name="pen-line" />Nouvelle info</a>
+    </div>
+</div>
+
+<section class="section">
+    <nav class="tabs" aria-label="Filtrer par statut">
+        @foreach (var t in tabs)
+        {
+            var url = "/admin/infos" + (t.Key is null ? "" : $"?statut={t.Key}");
+            <a href="@url" class="tab @(Model.Status == t.Key ? "is-active" : "")" aria-current="@(Model.Status == t.Key ? "page" : null)">
+                @t.Label <span class="num ml-1 text-ink-3">@t.Count</span>
+            </a>
+        }
+    </nav>
+    <form class="flex gap-2 border-t border-line p-3" hx-get="/admin/infos" hx-target="#article-list" hx-trigger="input changed delay:250ms from:input" hx-push-url="true">
+        @if (Model.Status is not null) { <input type="hidden" name="statut" value="@Model.Status"> }
+        <input type="search" name="q" value="@Model.Search" class="input min-w-0 flex-1" placeholder="Rechercher dans les titres" aria-label="Rechercher une info">
+    </form>
+    <div id="article-list">
+        <partial name="_List" model="Model" />
+    </div>
+</section>

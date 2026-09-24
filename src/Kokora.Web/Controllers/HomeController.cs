@@ -106,19 +106,6 @@ public class HomeController(PublicContext ctx, MatchQueryService queries, Standi
         return View();
     }
 
-    /// <summary>Sections des phases suivantes : page d'attente honnête plutôt qu'un lien mort.</summary>
-    [HttpGet("/infos")]
-    public IActionResult Soon()
-    {
-        var section = Request.Path.Value!.Trim('/').Split('/')[0];
-        ViewData["Nav"] = section;
-        ViewData["Title"] = section switch
-        {
-            "stats" => "Statistiques", "infos" => "Infos", "equipes" => "Équipes", "joueurs" => "Joueurs", _ => "Recherche"
-        };
-        return View();
-    }
-
     // Toutes méthodes : la page d'erreur est rejouée avec la méthode de la requête d'origine (ex. POST).
     [Route("/erreur")]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]

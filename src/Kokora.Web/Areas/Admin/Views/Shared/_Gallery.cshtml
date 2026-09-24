@@ -1,0 +1,41 @@
+@model GalleryVm
+@* Galerie éditable : envoi multiple, légende et crédit enregistrés à la volée, ordre par glisser-déposer. *@
+<form method="post" action="/admin/photos/ajouter?@Model.OwnerQuery" enctype="multipart/form-data"
+      class="grid gap-3 border-b border-line p-4 sm:grid-cols-[minmax(0,1fr)_200px_auto] sm:items-end">
+    <div class="field">
+        <label for="gallery-files">Photos</label>
+        <input type="file" id="gallery-files" name="files" multiple required accept="image/png,image/jpeg,image/webp,image/heic" class="input file">
+        <span class="hint">Jusqu'à @PhotoAdminService.MaxPerUpload photos à la fois, 8 Mo chacune.</span>
+    </div>
+    <div class="field">
+        <label for="gallery-credit">Crédit (facultatif)</label>
+        <input type="text" id="gallery-credit" name="credit" maxlength="120" class="input" placeholder="Photographe">
+    </div>
+    <button class="btn btn-primary"><icon name="upload" />Envoyer</button>
+</form>
+
+@if (Model.Photos.Count == 0)
+{
+    <div class="empty !py-6">Aucune photo pour l'instant.</div>
+}
+else
+{
+    <ul class="gallery-admin" data-sortable="/admin/photos/ordre?@Model.OwnerQuery">
+        @foreach (var p in Model.Photos)
+        {
+            <li data-id="@p.Id">
+                <div class="relative">
+                    <a href="@p.Url" target="_blank" rel="noopener"><img src="@p.ThumbUrl" alt="@p.Caption" width="400" height="400" loading="lazy"></a>
+                    <span class="drag-handle absolute! left-1 top-1 h-9! w-9! rounded-sm bg-surface" data-handle aria-label="Déplacer"><icon name="grip-vertical" /></span>
+                    <form method="post" action="/admin/photos/@p.Id/supprimer" data-confirm="Supprimer cette photo ?" class="absolute right-1 top-1">
+                        <button class="btn btn-icon h-9! min-h-9! w-9! bg-surface text-loss" aria-label="Supprimer la photo"><icon name="trash-2" /></button>
+                    </form>
+                </div>
+                <form hx-post="/admin/photos/@p.Id" hx-trigger="change" hx-swap="none" class="grid gap-1.5 p-2" data-caption-form>
+                    <input type="text" name="Caption" value="@p.Caption" maxlength="300" class="input min-h-9! text-[14px]!" placeholder="Légende" aria-label="Légende">
+                    <input type="text" name="Credit" value="@p.Credit" maxlength="120" class="input min-h-9! text-[13px]!" placeholder="Crédit" aria-label="Crédit">
+                </form>
+            </li>
+        }
+    </ul>
+}

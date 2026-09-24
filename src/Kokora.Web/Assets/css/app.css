@@ -459,23 +459,41 @@
     content: ""; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px; background: var(--brand);
   }
 
+  /* Barre du bas flottante (façon iOS) : pastille translucide et floutée, au-dessus du contenu. */
   .bottomnav {
-    position: fixed; inset: auto 0 0 0; z-index: 40;
-    display: grid; grid-template-columns: repeat(5, 1fr);
-    background: var(--surface); border-top: 1px solid var(--line);
-    padding-bottom: env(safe-area-inset-bottom);
+    --nav-h: 56px;
+    position: fixed; z-index: 40;
+    left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom));
+    max-width: 440px; margin-inline: auto;
+    display: grid; grid-template-columns: repeat(5, 1fr); padding: 5px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
+    -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid color-mix(in srgb, var(--line-strong) 55%, transparent);
+    box-shadow: 0 10px 30px -6px rgb(0 0 0 / .22), 0 2px 6px rgb(0 0 0 / .06), inset 0 1px 0 rgb(255 255 255 / .5);
+    transform: translateZ(0); /* calque dédié : reste en place pendant le défilement élastique d'iOS */
+  }
+  :root[data-theme="dark"] .bottomnav {
+    background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+    border-color: rgb(255 255 255 / .09);
+    box-shadow: 0 12px 34px -6px rgb(0 0 0 / .7), inset 0 1px 0 rgb(255 255 255 / .06);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .bottomnav { background: var(--surface); }
+    :root[data-theme="dark"] .bottomnav { background: var(--surface-2); }
   }
   .bottomnav a {
-    min-height: 56px; display: grid; place-items: center; align-content: center; gap: 3px;
-    font-size: 11px; font-weight: 600; color: var(--text-3); position: relative;
-    transition: color .15s var(--ease-snap);
+    min-height: calc(var(--nav-h) - 10px); display: grid; place-items: center; align-content: center; gap: 2px;
+    border-radius: 999px;
+    font-size: 10.5px; font-weight: 600; color: var(--text-3);
+    transition: color .15s var(--ease-snap), background-color .2s var(--ease-snap);
   }
-  .bottomnav a svg.icon { width: 22px; height: 22px; }
-  .bottomnav a[aria-current="page"] { color: var(--brand); }
-  .bottomnav a[aria-current="page"]::before {
-    content: ""; position: absolute; top: -1px; left: 30%; right: 30%; height: 2px; background: var(--brand); border-radius: 0 0 2px 2px;
-  }
-  .has-bottomnav { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
+  .bottomnav a svg.icon { width: 21px; height: 21px; }
+  .bottomnav a:active { background: color-mix(in srgb, var(--text) 8%, transparent); }
+  .bottomnav a[aria-current="page"] { color: var(--brand); background: color-mix(in srgb, var(--brand) 14%, transparent); }
+  :root[data-theme="dark"] .bottomnav a[aria-current="page"] { background: color-mix(in srgb, var(--brand) 20%, transparent); }
+  /* Place réservée sous le contenu pour que la barre ne cache rien. */
+  .has-bottomnav { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
   @media (min-width: 768px) { .bottomnav { display: none; } .has-bottomnav { padding-bottom: 0; } }
 
   /* Sélecteur de compétition : bande de puces */
@@ -680,7 +698,7 @@
 /* ---------- Direct ---------- */
 @layer components {
   /* Nouvelle version de l'application */
-  .update-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(68px + env(safe-area-inset-bottom)); z-index: 60;
+  .update-toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 60;
     display: flex; align-items: center; gap: 12px; width: max-content; max-width: calc(100vw - 24px); padding: 8px 8px 8px 16px;
     border-radius: var(--radius-md); background: #1d2320; color: #fff; font-size: 14px; box-shadow: 0 8px 24px rgb(0 0 0 / .25); }
   @media (min-width: 768px) { .update-toast { bottom: 24px; } }

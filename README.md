@@ -201,6 +201,19 @@ docker compose up -d --build
 - Mise à jour : `git pull && docker compose up -d --build` (quelques secondes d'interruption).
 - Journaux : `docker compose logs -f app`. Supervision : `https://votre-domaine/sante` répond `Healthy` si l'application et la base fonctionnent (à brancher sur un service gratuit comme UptimeRobot).
 
+### Render (gratuit, sans carte bancaire)
+
+Pour tester ou présenter l'application. Le fichier `render.yaml` crée l'application et la base en une fois :
+
+1. render.com → se connecter avec GitHub → **New → Blueprint** → choisir le dépôt `kokora`.
+2. Renseigner les deux valeurs demandées : identifiant et mot de passe du premier super admin → **Apply**.
+3. Attendre la fin de la construction (10 à 15 min la première fois) ; l'adresse est de la forme `https://kokora-xxxx.onrender.com`.
+
+Limites de l'offre gratuite :
+- **La base PostgreSQL gratuite expire 30 jours après sa création** (supprimée 14 jours plus tard) : avant l'échéance, passer à une base payante ou transférer les données (`pg_dump` puis `pg_restore`) vers une base gratuite sans expiration (Neon).
+- 512 Mo de mémoire, 0,1 processeur : pages correctes, envoi de photos lent. Mise en veille après 15 min sans visite (réveil ≈ 1 min) : un service de surveillance gratuit (UptimeRobot) qui appelle `/sante` toutes les 5 min l'évite.
+- Pas de disque permanent : `Storage:Mode = Database` range photos, logos, clés de chiffrement et clés des notifications **dans la base** (1 Go au total sur l'offre gratuite).
+
 ### Sans Docker
 
 1. Installer .NET 10 (runtime ASP.NET Core), PostgreSQL et nginx ; créer la base et un utilisateur `kokora`.
@@ -217,6 +230,7 @@ docker compose up -d --build
 | `Bootstrap:SuperAdmin:Login` / `Password` | Premier super admin (créé au démarrage s'il n'en existe aucun) |
 | `Storage:DataPath` | Données locales : clés de chiffrement, clés VAPID (défaut : `App_Data`) |
 | `Storage:UploadsPath` | Photos et logos (défaut : `wwwroot/uploads`) |
+| `Storage:Mode` | `Database` : fichiers et clés rangés dans PostgreSQL (hébergeur sans disque permanent) |
 | `Push:PublicKey` / `PrivateKey` / `Subject` | Clés des notifications (générées automatiquement si absentes) |
 
 ### Sauvegardes

@@ -19,9 +19,10 @@ var dataPath = builder.Configuration["Storage:DataPath"] is { Length: > 0 } cust
     : Path.Combine(builder.Environment.ContentRootPath, "App_Data");
 builder.Configuration["Storage:DataPath"] = dataPath;
 // Sans clés persistantes, chaque redémarrage (ou conteneur recréé) déconnecterait tout le monde.
-builder.Services.AddDataProtection()
-    .SetApplicationName("Kokora")
-    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataPath, "keys")));
+var databaseStorage = Kokora.Infrastructure.DependencyInjection.IsDatabaseStorage(builder.Configuration);
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("Kokora");
+if (databaseStorage) dataProtection.PersistKeysToDbContext<AppDbContext>(); // hébergement sans disque permanent
+else dataProtection.PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataPath, "keys")));
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
@@ -149,6 +150,17 @@ app.UseVisitCounting();
 app.MapStaticAssets();
 app.MapControllers();
 app.MapHealthChecks("/sante"); // supervision (disponibilité de l'application et de la base)
+if (databaseStorage)
+{
+    // Photos et logos rangés en base : servis sous la même adresse /uploads/… (noms uniques, gardés un an en cache).
+    app.MapGet("/uploads/{**key}", async (string key, Kokora.Infrastructure.Storage.IBlobStore blobs, HttpContext http, CancellationToken ct) =>
+    {
+        if (key.StartsWith('_') || key.Contains("..")) return Results.NotFound();
+        if (await blobs.ReadAsync(key, ct) is not { } file) return Results.NotFound();
+        http.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+        return Results.File(file.Data, file.ContentType);
+    });
+}
 app.MapHub<Kokora.Web.Live.LiveHub>(Kokora.Web.Live.LiveHub.Path);
 app.MapControllerRoute(name: "admin", pattern: "admin/{controller=Dashboard}/{action=Index}/{id?}", defaults: new { area = "Admin" })
    .WithStaticAssets();

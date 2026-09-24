@@ -12,8 +12,14 @@ using Microsoft.EntityFrameworkCore;
 namespace Kokora.Infrastructure.Persistence;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options)
-    : IdentityDbContext<AppUser>(options), IAppDbContext
+    : IdentityDbContext<AppUser>(options), IAppDbContext, Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.IDataProtectionKeyContext
 {
+    /// <summary>Fichiers téléversés quand Storage:Mode = Database (hébergement sans disque permanent).</summary>
+    public DbSet<Storage.StoredFile> StoredFiles => Set<Storage.StoredFile>();
+    /// <summary>Clés de chiffrement des cookies quand elles sont conservées en base.</summary>
+    public DbSet<Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey> DataProtectionKeys =>
+        Set<Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey>();
+
     public DbSet<Season> Seasons => Set<Season>();
     public DbSet<Competition> Competitions => Set<Competition>();
     public DbSet<Phase> Phases => Set<Phase>();
@@ -51,6 +57,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
+        b.Entity<Storage.StoredFile>(e =>
+        {
+            e.HasKey(x => x.Key);
+            e.Property(x => x.Key).HasMaxLength(300);
+            e.Property(x => x.ContentType).HasMaxLength(100);
+        });
 
         // Identity impose ses noms de tables (AspNetUsers…) : on les aligne sur la convention snake_case.
         b.Entity<AppUser>().ToTable("users");

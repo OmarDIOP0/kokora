@@ -30,7 +30,8 @@ public class WebPushService : BackgroundService, IPushService
 
     public string? PublicKey => _vapid?.PublicKey;
 
-    public WebPushService(IConfiguration config, IHostEnvironment env, IServiceScopeFactory scopes, ILogger<WebPushService> logger)
+    public WebPushService(IConfiguration config, IHostEnvironment env, IServiceScopeFactory scopes, ILogger<WebPushService> logger,
+        Storage.IBlobStore blobs)
     {
         _scopes = scopes;
         _logger = logger;
@@ -38,7 +39,12 @@ public class WebPushService : BackgroundService, IPushService
         var (pub, priv) = (config["Push:PublicKey"], config["Push:PrivateKey"]);
         if (string.IsNullOrWhiteSpace(pub) || string.IsNullOrWhiteSpace(priv))
         {
-            try { (pub, priv) = LoadOrCreateKeys(Path.Combine(config["Storage:DataPath"] is { Length: > 0 } data ? data : Path.Combine(env.ContentRootPath, "App_Data"), "vapid.json")); }
+            try
+            {
+                (pub, priv) = DependencyInjection.IsDatabaseStorage(config)
+                    ? LoadOrCreateKeysInDatabase(blobs)
+                    : LoadOrCreateKeys(Path.Combine(config["Storage:DataPath"] is { Length: > 0 } data ? data : Path.Combine(env.ContentRootPath, "App_Data"), "vapid.json"));
+            }
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Notifications push désactivées : impossible de créer les clés VAPID.");
@@ -63,6 +69,25 @@ public class WebPushService : BackgroundService, IPushService
         }));
         _logger.LogInformation("Clés VAPID générées dans {Path} (à conserver et sauvegarder).", path);
         return (keys.PublicKey, keys.PrivateKey);
+    }
+
+    /// <summary>Clés rangées avec les fichiers en base (clé réservée, jamais servie publiquement).</summary>
+    private (string, string) LoadOrCreateKeysInDatabase(Storage.IBlobStore blobs)
+    {
+        const string key = "_system/vapid.json";
+        var saved = blobs.ReadAsync(key).GetAwaiter().GetResult();
+        if (saved is { } file)
+        {
+            var keys = JsonSerializer.Deserialize<Dictionary<string, string>>(file.Data)!;
+            return (keys["publicKey"], keys["privateKey"]);
+        }
+        var created = VapidHelper.GenerateVapidKeys();
+        blobs.WriteAsync(key, JsonSerializer.SerializeToUtf8Bytes(new Dictionary<string, string>
+        {
+            ["publicKey"] = created.PublicKey, ["privateKey"] = created.PrivateKey
+        }), "application/json").GetAwaiter().GetResult();
+        _logger.LogInformation("Clés VAPID générées et enregistrées en base.");
+        return (created.PublicKey, created.PrivateKey);
     }
 
     public void Enqueue(PushMessage message, IReadOnlyCollection<int> subscriptionIds)

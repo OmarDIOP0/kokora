@@ -25,6 +25,9 @@ public class KokoraWebFactory : WebApplicationFactory<Program>
 
     public KokoraWebFactory() : this("kokora_tests") { }
 
+    /// <summary>Réglages supplémentaires (à renseigner avant le premier accès à Server).</summary>
+    public Dictionary<string, string> Settings { get; } = [];
+
     public KokoraWebFactory(string database)
     {
         var baseCs = Environment.GetEnvironmentVariable("KOKORA_TEST_CONNECTION")
@@ -52,6 +55,7 @@ public class KokoraWebFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Development");
         // Appliqué avant l'exécution de Program : remplace la base configurée en user-secrets.
         builder.UseSetting("ConnectionStrings:Kokora", _connectionString);
+        foreach (var (key, value) in Settings) builder.UseSetting(key, value);
         builder.ConfigureLogging(l => l.SetMinimumLevel(LogLevel.Warning));
         builder.ConfigureTestServices(services =>
         {

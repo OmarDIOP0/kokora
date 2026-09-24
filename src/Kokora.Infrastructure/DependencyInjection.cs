@@ -12,9 +12,9 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
     {
-        var connectionString = config.GetConnectionString("Kokora")
+        var connectionString = ToNpgsql(config.GetConnectionString("Kokora")
             ?? throw new InvalidOperationException(
-                "Chaîne de connexion 'Kokora' manquante. Voir README : dotnet user-secrets set \"ConnectionStrings:Kokora\" \"...\"");
+                "Chaîne de connexion 'Kokora' manquante. Voir README : dotnet user-secrets set \"ConnectionStrings:Kokora\" \"...\""));
 
         services.AddScoped<AuditInterceptor>();
         services.AddDbContext<AppDbContext>((sp, options) =>
@@ -40,6 +40,13 @@ public static class DependencyInjection
             .AddDefaultTokenProviders()
             .AddErrorDescriber<FrenchIdentityErrorDescriber>();
 
+        // Fichiers téléversés : disque (par défaut) ou base de données (Storage:Mode = Database, ex. Render gratuit).
+        if (IsDatabaseStorage(config))
+            services.AddSingleton<Storage.IBlobStore, Storage.DatabaseBlobStore>();
+        else
+            services.AddSingleton<Storage.IBlobStore>(sp => new Storage.LocalBlobStore(config["Storage:UploadsPath"] is { Length: > 0 } custom
+                ? custom
+                : Path.Combine(sp.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>().ContentRootPath, "wwwroot", "uploads")));
         services.AddSingleton<IImageStore, Storage.SkiaImageStore>();
         services.AddSingleton<IPlayerFileReader, Storage.PlayerFileReader>();
         services.AddSingleton<IHtmlCleaner, Content.HtmlCleaner>();
@@ -56,5 +63,39 @@ public static class DependencyInjection
         services.AddSingleton<IVisitCounter>(sp => sp.GetRequiredService<Analytics.VisitRecorder>());
         services.AddHostedService(sp => sp.GetRequiredService<Analytics.VisitRecorder>());
         return services;
+    }
+
+    public static bool IsDatabaseStorage(IConfiguration config) =>
+        string.Equals(config["Storage:Mode"], "Database", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Accepte aussi le format URL fourni par les hébergeurs (Render, Neon, Heroku) :
+    /// postgresql://utilisateur:motdepasse@hôte:port/base → format Npgsql.
+    /// </summary>
+    public static string ToNpgsql(string connectionString)
+    {
+        if (!connectionString.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase)
+            && !connectionString.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase))
+            return connectionString;
+        var uri = new Uri(connectionString);
+        var userInfo = uri.UserInfo.Split(':', 2);
+        var builder = new Npgsql.NpgsqlConnectionStringBuilder
+        {
+            Host = uri.Host,
+            Port = uri.IsDefaultPort || uri.Port <= 0 ? 5432 : uri.Port,
+            Database = uri.AbsolutePath.TrimStart('/'),
+            Username = Uri.UnescapeDataString(userInfo[0]),
+            Password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : null,
+            // Hôte distant : chiffrement exigé (Render, Neon) ; en local, laissé au choix du serveur.
+            SslMode = uri.Host is "localhost" or "127.0.0.1" || !uri.Host.Contains('.') ? Npgsql.SslMode.Prefer : Npgsql.SslMode.Require
+        };
+        foreach (var part in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var kv = part.Split('=', 2);
+            if (kv[0].Equals("sslmode", StringComparison.OrdinalIgnoreCase) && kv.Length == 2
+                && Enum.TryParse<Npgsql.SslMode>(kv[1], true, out var mode))
+                builder.SslMode = mode;
+        }
+        return builder.ConnectionString;
     }
 }

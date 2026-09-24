@@ -1,0 +1,41 @@
+# Déploiement sur Render (offre gratuite) : Render → New → Blueprint → ce dépôt.
+# Crée l'application (Docker) et la base PostgreSQL, et les relie. Voir README, section « Render ».
+# Attention : la base PostgreSQL gratuite de Render expire 30 jours après sa création.
+
+services:
+  - type: web
+    name: kokora
+    runtime: docker
+    plan: free
+    region: frankfurt          # le plus proche de Dakar parmi les régions Render
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /sante
+    envVars:
+      - key: ConnectionStrings__Kokora
+        fromDatabase:
+          name: kokora-db
+          property: connectionString
+      # Pas de disque permanent sur l'offre gratuite : photos, logos et clés rangés dans la base.
+      - key: Storage__Mode
+        value: Database
+      - key: PORT
+        value: "8080"
+      # Mémoire limitée (512 Mo) : ramasse-miettes économe.
+      - key: DOTNET_gcServer
+        value: "0"
+      - key: DOTNET_GCConserveMemory
+        value: "5"
+      - key: Push__Subject
+        value: mailto:contact@kokora.sn
+      # Premier super admin : demandés lors de la création (jamais écrits dans le dépôt).
+      - key: Bootstrap__SuperAdmin__Login
+        sync: false
+      - key: Bootstrap__SuperAdmin__Password
+        sync: false
+
+databases:
+  - name: kokora-db
+    plan: free
+    region: frankfurt
+    databaseName: kokora
+    user: kokora

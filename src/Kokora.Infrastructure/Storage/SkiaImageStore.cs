@@ -1,27 +1,17 @@
 using Kokora.Application.Abstractions;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
 using SkiaSharp;
 
 namespace Kokora.Infrastructure.Storage;
 
 /// <summary>
-/// Stocke les images dans wwwroot/uploads (ou Storage:UploadsPath).
-/// Tout fichier est décodé : un fichier qui n'est pas réellement une image est refusé, quel que soit son extension.
+/// Convertit les images en WebP redimensionné puis les range dans le stockage de fichiers (disque ou base),
+/// publiées sous /uploads/… Tout fichier est décodé : un fichier qui n'est pas réellement une image est refusé,
+/// quelle que soit son extension.
 /// </summary>
-public class SkiaImageStore : IImageStore
+public class SkiaImageStore(IBlobStore blobs) : IImageStore
 {
     private const int WebpQuality = 80;
-    private readonly string _root;
-    private readonly string _publicPrefix = "/uploads";
-
-    public SkiaImageStore(IHostEnvironment env, IConfiguration config)
-    {
-        _root = config["Storage:UploadsPath"] is { Length: > 0 } custom
-            ? custom
-            : Path.Combine(env.ContentRootPath, "wwwroot", "uploads");
-        Directory.CreateDirectory(_root);
-    }
+    private const string PublicPrefix = "/uploads";
 
     public async Task<IReadOnlyList<SavedImage>> SaveImagesAsync(Stream input, string folder, string baseName,
         IReadOnlyList<ImageVariant> variants, CancellationToken ct = default)
@@ -43,8 +33,6 @@ public class SkiaImageStore : IImageStore
         using var source = ApplyOrientation(decoded, codec.EncodedOrigin);
 
         var safeFolder = string.Concat(folder.Where(c => char.IsAsciiLetterOrDigit(c) || c == '-'));
-        var dir = Path.Combine(_root, safeFolder);
-        Directory.CreateDirectory(dir);
         var stamp = Guid.NewGuid().ToString("N")[..8];
         var safeName = string.Concat(baseName.Where(c => char.IsAsciiLetterOrDigit(c) || c == '-'));
         if (safeName.Length == 0) safeName = "image";
@@ -54,23 +42,19 @@ public class SkiaImageStore : IImageStore
         {
             using var resized = Render(source, v);
             using var data = resized.Encode(SKEncodedImageFormat.Webp, WebpQuality);
-            var file = $"{safeName}-{stamp}{v.Suffix}.webp";
-            await using (var fs = File.Create(Path.Combine(dir, file)))
-                data.SaveTo(fs);
-            urls.Add(new SavedImage($"{_publicPrefix}/{safeFolder}/{file}", resized.Width, resized.Height));
+            var key = $"{safeFolder}/{safeName}-{stamp}{v.Suffix}.webp";
+            await blobs.WriteAsync(key, data.ToArray(), "image/webp", ct);
+            urls.Add(new SavedImage($"{PublicPrefix}/{key}", resized.Width, resized.Height));
         }
         return urls;
     }
 
-    public Task DeleteAsync(string? publicUrl)
+    public async Task DeleteAsync(string? publicUrl)
     {
-        if (string.IsNullOrEmpty(publicUrl) || !publicUrl.StartsWith(_publicPrefix + "/", StringComparison.Ordinal))
-            return Task.CompletedTask;
-        var relative = publicUrl[(_publicPrefix.Length + 1)..].Replace('/', Path.DirectorySeparatorChar);
-        var full = Path.GetFullPath(Path.Combine(_root, relative));
-        if (full.StartsWith(Path.GetFullPath(_root), StringComparison.OrdinalIgnoreCase) && File.Exists(full))
-            File.Delete(full);
-        return Task.CompletedTask;
+        if (string.IsNullOrEmpty(publicUrl) || !publicUrl.StartsWith(PublicPrefix + "/", StringComparison.Ordinal)) return;
+        var key = publicUrl[(PublicPrefix.Length + 1)..];
+        if (key.Contains("..")) return;
+        await blobs.DeleteAsync(key);
     }
 
     private static SKImage Render(SKBitmap src, ImageVariant v)

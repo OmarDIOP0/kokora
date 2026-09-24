@@ -1,0 +1,54 @@
+@model List<MatchRowVm>
+@{
+    ViewData["Title"] = "Direct";
+}
+<div class="page-head">
+    <div>
+        <p class="label">Mode terrain</p>
+        <h1>Suivre un match en direct</h1>
+        <p class="mt-1 max-w-[62ch] text-[14px] text-ink-2">
+            Depuis le bord du terrain : coup d'envoi, buts, cartons, remplacements et tirs au but.
+            Les spectateurs voient chaque action instantanément. Si le réseau coupe, les actions sont gardées sur le téléphone et envoyées dès son retour.
+        </p>
+    </div>
+</div>
+
+<section class="section">
+    <header class="section-head"><span>Matchs d'hier, d'aujourd'hui et de demain</span></header>
+    @if (Model.Count == 0)
+    {
+        <div class="empty"><strong>Aucun match proche</strong>Les matchs programmés apparaissent ici la veille de leur date.</div>
+    }
+    @foreach (var m in Model)
+    {
+        <a href="/admin/direct/@m.Id" class="row !py-3">
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5 text-[12px] text-ink-3" style="--comp:@m.CompetitionColor">
+                    <span class="comp-swatch !h-2 !w-2"></span><span class="truncate">@m.Competition · @m.Stage</span>
+                </div>
+                <div class="mt-1 grid gap-1">
+                    <div class="flex items-center gap-2"><crest team="m.Home" /><span class="truncate font-semibold">@m.Home?.Name</span></div>
+                    <div class="flex items-center gap-2"><crest team="m.Away" /><span class="truncate font-semibold">@m.Away?.Name</span></div>
+                </div>
+            </div>
+            <div class="grid justify-items-end gap-1 text-right">
+                @if (m.IsLive)
+                {
+                    <span class="score text-[22px] text-live">@m.HomeScore - @m.AwayScore</span>
+                    <span class="badge live"><span class="live-dot"></span>@Display.StatusLabel(m.Status)</span>
+                }
+                else if (m.ShowScore)
+                {
+                    <span class="score text-[22px]">@m.HomeScore - @m.AwayScore</span>
+                    <span class="badge">@Display.StatusLabel(m.Status)</span>
+                }
+                else
+                {
+                    <span class="num text-[14px] font-semibold">@(m.KickoffAt is { } k ? KokoraTime.DayRelative(DateOnly.FromDateTime(KokoraTime.ToLocal(k).DateTime)) + ", " + KokoraTime.Hour(k) : "Date ?")</span>
+                    <span class="text-[12.5px] text-ink-3">@m.Stadium</span>
+                }
+            </div>
+            <icon name="chevron-right" class="text-ink-3" />
+        </a>
+    }
+</section>

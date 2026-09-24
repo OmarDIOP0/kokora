@@ -19,6 +19,8 @@ builder.Services.AddApplication();
 builder.Services.AddScoped<AdminSeason>();
 builder.Services.AddScoped<Kokora.Web.Areas.Admin.Models.Lookups>();
 builder.Services.AddScoped<PublicContext>();
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<ILiveNotifier, Kokora.Web.Live.SignalRLiveNotifier>();
 
 builder.Services.AddControllersWithViews(options =>
 {
@@ -100,6 +102,7 @@ app.UseAuthorization();
 
 app.MapStaticAssets();
 app.MapControllers();
+app.MapHub<Kokora.Web.Live.LiveHub>(Kokora.Web.Live.LiveHub.Path);
 app.MapControllerRoute(name: "admin", pattern: "admin/{controller=Dashboard}/{action=Index}/{id?}", defaults: new { area = "Admin" })
    .WithStaticAssets();
 app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}")

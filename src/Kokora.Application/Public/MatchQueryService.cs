@@ -82,6 +82,11 @@ public class MatchQueryService(IAppDbContext db)
         return m is null ? null : Mapping.Row(m, now);
     }
 
+    /// <summary>Une ligne de match (rafraîchissement en direct).</summary>
+    public async Task<MatchRowVm?> RowAsync(int id, CancellationToken ct = default) =>
+        await db.Matches.Where(m => m.Id == id && m.Phase.Competition.IsPublished).WithRowData().FirstOrDefaultAsync(ct)
+            is { } m ? Mapping.Row(m, DateTimeOffset.UtcNow) : null;
+
     public async Task<MatchDetailVm?> DetailAsync(int id, CancellationToken ct = default)
     {
         var m = await db.Matches.Where(x => x.Id == id && x.Phase.Competition.IsPublished)
@@ -97,7 +102,8 @@ public class MatchQueryService(IAppDbContext db)
         var row = Mapping.Row(m, now);
         var comp = m.Phase.Competition;
         var events = m.Events
-            .Where(e => e.Type is not (MatchEventType.PeriodStart or MatchEventType.PeriodEnd or MatchEventType.Info))
+            // Les tirs au but figurent dans le score (« 4-3 aux tirs au but »), pas dans la chronologie.
+            .Where(e => e.Type is not (MatchEventType.PeriodStart or MatchEventType.PeriodEnd or MatchEventType.Info or MatchEventType.ShootoutKick))
             .OrderBy(e => e.Period).ThenBy(e => e.Minute).ThenBy(e => e.AddedTime ?? 0).ThenBy(e => e.Id)
             .Select(e => new TimelineEventVm(e.Id, e.Type, e.MinuteLabel, e.ClubId == m.HomeClubId,
                 e.Player?.DisplayName, e.Player?.Slug, e.AssistPlayer?.DisplayName, e.PlayerOut?.DisplayName, e.IsScored, e.Period))

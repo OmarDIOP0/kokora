@@ -1,0 +1,7 @@
+@model MatchDetailVm
+@* Réponse au rafraîchissement en direct : en-tête et chronologie remplacés à leur place (hx-swap-oob). *@
+@{
+    ViewData["Oob"] = true;
+}
+<partial name="_MatchHeader" model="Model" />
+<partial name="_Timeline" model="Model" />

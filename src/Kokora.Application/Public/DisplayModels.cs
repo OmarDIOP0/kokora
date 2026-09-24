@@ -33,6 +33,15 @@ public record MatchRowVm
     /// <summary>« Poule A · J3 » ou « Demi-finales ».</summary>
     public string? Stage { get; init; }
     public bool IsFeatured { get; init; }
+    // Chronomètre calculé dans le navigateur.
+    public LivePeriod Period { get; init; }
+    public DateTimeOffset? PeriodStartedAt { get; init; }
+    public int HalfMinutes { get; init; } = 45;
+    public int ExtraHalfMinutes { get; init; } = 15;
+
+    /// <summary>Match à suivre en temps réel : en cours, ou coup d'envoi proche (la page se connecte au direct).</summary>
+    public bool Watch => IsLive || (Status == MatchStatus.Scheduled && KickoffAt is { } k
+        && k < DateTimeOffset.UtcNow.AddHours(12) && k > DateTimeOffset.UtcNow.AddHours(-6));
 
     public bool IsLive => Status is MatchStatus.Live or MatchStatus.HalfTime;
     public bool ShowScore => HomeScore.HasValue && AwayScore.HasValue &&

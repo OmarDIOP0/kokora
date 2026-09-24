@@ -4,6 +4,7 @@ import Alpine from 'alpinejs';
 import { dayjs } from './lib/time.js';
 import { favorites } from './lib/favorites.js';
 import { theme } from './lib/theme.js';
+import { tickClocks } from './lib/clock.js';
 
 window.htmx = htmx;
 htmx.config.defaultSwapStyle = 'innerHTML';
@@ -39,7 +40,9 @@ function refreshCountdowns(root = document) {
   });
 }
 
-document.addEventListener('htmx:afterSwap', (e) => { refreshRelativeTimes(e.target); refreshCountdowns(e.target); });
+document.addEventListener('htmx:afterSwap', (e) => { refreshRelativeTimes(e.target); refreshCountdowns(e.target); tickClocks(); });
+// Minute des matchs en direct, calculée localement entre deux mises à jour du serveur.
+setInterval(tickClocks, 10_000);
 setInterval(refreshRelativeTimes, 30_000);
 setInterval(refreshCountdowns, 1_000);
 
@@ -52,6 +55,9 @@ document.addEventListener('DOMContentLoaded', () => {
   refreshRelativeTimes();
   refreshCountdowns();
   updateOnline();
+  tickClocks();
+  // Temps réel : uniquement si la page montre un match en cours ou sur le point de commencer.
+  if (document.querySelector('[data-watch]')) import('./live.js');
   // Centre la date sélectionnée dans la bande de dates.
   document.querySelector('.datestrip [aria-current="date"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
 });

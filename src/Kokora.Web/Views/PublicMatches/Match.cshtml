@@ -26,70 +26,10 @@
     }
 }
 
-<div class="mx-auto max-w-[760px]">
+<div class="mx-auto max-w-[760px]" data-live-page="@m.Id" data-watch="@(m.Watch ? "" : null)">
     <section class="section">
-        <!-- En-tête du match -->
-        <div class="px-4 pb-4 pt-3 text-center" style="--comp:@d.Competition.Color">
-            <a href="/classements/@d.Competition.Slug" class="label inline-flex items-center gap-1.5 hover:text-ink">
-                <span class="comp-swatch !h-2.5 !w-2.5"></span>@d.Competition.Name · @m.Stage
-            </a>
-            <div class="mt-4 grid grid-cols-[1fr_auto_1fr] items-start gap-3">
-                <a href="@(m.Home?.Url ?? "#")" class="grid justify-items-center gap-2">
-                    @if (m.Home is not null) { <crest team="m.Home" size="xl" /> } else { <span class="crest xl">?</span> }
-                    <span class="font-semibold leading-tight @(outcome == -1 ? "text-ink-2" : "")">@homeName</span>
-                </a>
-                <div class="min-w-[92px] pt-2">
-                    @if (m.ShowScore)
-                    {
-                        <div class="score text-[48px] @(m.IsLive ? "text-live" : "")">@m.HomeScore<span class="mx-1.5 text-ink-3">-</span>@m.AwayScore</div>
-                        @if (m.HomePenalties is not null)
-                        {
-                            <div class="mt-1 text-[13px] font-semibold text-ink-2">@m.HomePenalties-@m.AwayPenalties aux tirs au but</div>
-                        }
-                        else if (m.WentToExtraTime)
-                        {
-                            <div class="mt-1 text-[13px] text-ink-2">après prolongations</div>
-                        }
-                    }
-                    else if (m.KickoffAt is { } k && m.Status == MatchStatus.Scheduled)
-                    {
-                        <div class="score text-[34px]">@KokoraTime.Hour(k)</div>
-                        <div class="mt-1 text-[13px] text-ink-2" data-countdown="@k.ToString("O")"></div>
-                    }
-                    else
-                    {
-                        <div class="score text-[34px] text-ink-3">-</div>
-                    }
-                    <div class="mt-2">
-                        @if (m.Status == MatchStatus.Live)
-                        {
-                            <span class="inline-flex items-center gap-1.5 text-sm font-semibold text-live"><span class="live-dot"></span><span class="minute">@m.Minute</span></span>
-                        }
-                        else if (m.Status != MatchStatus.Scheduled)
-                        {
-                            <span class="badge @Display.StatusBadge(m.Status)">@Display.StatusLabel(m.Status)</span>
-                        }
-                    </div>
-                </div>
-                <a href="@(m.Away?.Url ?? "#")" class="grid justify-items-center gap-2">
-                    @if (m.Away is not null) { <crest team="m.Away" size="xl" /> } else { <span class="crest xl">?</span> }
-                    <span class="font-semibold leading-tight @(outcome == 1 ? "text-ink-2" : "")">@awayName</span>
-                </a>
-            </div>
-            @if (d.HomeHalfTime is not null && m.ShowScore)
-            {
-                <p class="mt-3 text-[13px] text-ink-3">Mi-temps : @d.HomeHalfTime-@d.AwayHalfTime</p>
-            }
-            <p class="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[13px] text-ink-2">
-                @if (m.KickoffAt is { } kk) { <span class="inline-flex items-center gap-1"><icon name="clock" />@KokoraTime.Long(kk)</span> }
-                @if (m.Stadium is not null) { <span class="inline-flex items-center gap-1"><icon name="map-pin" />@m.Stadium</span> }
-                @if (d.Referee is not null) { <span class="inline-flex items-center gap-1"><icon name="flag" />@d.Referee</span> }
-            </p>
-            @if (d.Notes is not null)
-            {
-                <p class="mx-auto mt-3 max-w-[52ch] whitespace-pre-line rounded-sm bg-surface-2 px-3 py-2 text-[13px] text-ink-2">@d.Notes</p>
-            }
-        </div>
+        <!-- En-tête du match (rafraîchi en direct) -->
+        <partial name="_MatchHeader" model="Model.Detail" />
 
         <!-- Onglets -->
         <div x-data="{ tab: 'resume' }">
@@ -109,26 +49,7 @@
 
             <!-- Résumé : chronologie -->
             <div role="tabpanel" x-show="tab === 'resume'">
-                @if (d.Events.Count == 0)
-                {
-                    <div class="empty !py-8">
-                        @(m.Status == MatchStatus.Scheduled ? "Le match n'a pas encore commencé." : "Aucun événement saisi pour ce match.")
-                    </div>
-                }
-                @{ var halfTimeShown = false; }
-                @foreach (var e in d.Events)
-                {
-                    @if (!halfTimeShown && e.Period >= LivePeriod.SecondHalf && d.Events.Any(x => x.Period == LivePeriod.FirstHalf))
-                    {
-                        halfTimeShown = true;
-                        <div class="timeline-row bg-surface-2 !min-h-9"><div class="label col-span-3 text-center !text-ink-2">Mi-temps@(d.HomeHalfTime is not null ? $" · {d.HomeHalfTime}-{d.AwayHalfTime}" : "")</div></div>
-                    }
-                    <div class="timeline-row">
-                        <div class="home">@if (e.IsHome) { <partial name="_TimelineEvent" model="e" /> }</div>
-                        <div class="min">@e.Minute</div>
-                        <div class="away">@if (!e.IsHome) { <partial name="_TimelineEvent" model="e" /> }</div>
-                    </div>
-                }
+                <partial name="_Timeline" model="Model.Detail" />
             </div>
 
             <!-- Compositions -->

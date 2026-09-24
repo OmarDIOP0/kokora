@@ -47,7 +47,11 @@ internal static class Mapping
             Competition = comp.Name,
             CompetitionColor = comp.Color,
             Stage = Stage(m),
-            IsFeatured = m.IsFeatured
+            IsFeatured = m.IsFeatured,
+            Period = m.LivePeriod,
+            PeriodStartedAt = m.PeriodStartedAt,
+            HalfMinutes = comp.HalfDurationMinutes,
+            ExtraHalfMinutes = comp.ExtraTimeHalfDurationMinutes
         };
     }
 

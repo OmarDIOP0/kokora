@@ -31,6 +31,8 @@ public class MatchEvent : Entity, IAuditable, IDemoData
     public string? Note { get; set; }
 
     public string? CreatedByUserId { get; set; }
+    /// <summary>Identifiant généré par l'appareil du mode terrain (évite les doublons lors d'un renvoi).</summary>
+    public string? ClientKey { get; set; }
     /// <summary>Action annulée (« annuler la dernière action ») : conservée pour l'audit.</summary>
     public bool IsCancelled { get; set; }
     public bool IsDemo { get; set; }

@@ -21,6 +21,7 @@ public static class DependencyInjection
         services.AddScoped<QualificationService>();
         services.AddScoped<DisciplineAdminService>();
         services.AddScoped<ArticleAdminService>();
+        services.AddScoped<Live.LiveMatchService>();
         services.AddScoped<PhotoAdminService>();
 
         services.AddSingleton<CompetitionCache>();

@@ -47,7 +47,8 @@ public class ResultEventInput
 }
 
 /// <summary>Saisie (rapide) du résultat d'un match déjà joué, et ses conséquences : classements, tableau.</summary>
-public class ResultService(IAppDbContext db, CompetitionCache cache, QualificationService qualifications, ICurrentUser user)
+public class ResultService(IAppDbContext db, CompetitionCache cache, QualificationService qualifications, ICurrentUser user,
+    ILiveNotifier notifier)
 {
     public static readonly MatchEventType[] EditableEvents =
         [MatchEventType.Goal, MatchEventType.PenaltyGoal, MatchEventType.OwnGoal, MatchEventType.YellowCard,
@@ -203,7 +204,13 @@ public class ResultService(IAppDbContext db, CompetitionCache cache, Qualificati
         await db.SaveChangesAsync(ct);
         await qualifications.ResolveFromMatchAsync(m.Id, ct);
         cache.Invalidate(m.Phase.CompetitionId);
+        await NotifyAsync(m, ct);
     }
+
+    /// <summary>Les pages ouvertes (accueil, fiche du match) se mettent à jour sans rechargement.</summary>
+    private Task NotifyAsync(Match m, CancellationToken ct) =>
+        notifier.MatchUpdatedAsync(new LiveUpdate(m.Id, m.Status, m.LivePeriod, m.HomeScore, m.AwayScore, m.HomePenalties, m.AwayPenalties,
+            m.PeriodStartedAt, m.Phase.Competition.HalfDurationMinutes, m.Phase.Competition.ExtraTimeHalfDurationMinutes, null), ct);
 
     /// <summary>Efface le résultat (erreur de saisie) : le match redevient programmé.</summary>
     public async Task ClearAsync(int matchId, CancellationToken ct = default)
@@ -219,6 +226,7 @@ public class ResultService(IAppDbContext db, CompetitionCache cache, Qualificati
         await db.SaveChangesAsync(ct);
         await qualifications.ResolveFromMatchAsync(m.Id, ct);
         cache.Invalidate(m.Phase.CompetitionId);
+        await NotifyAsync(m, ct);
     }
 
     /// <summary>Vainqueur d'un match terminé (tirs au but et forfait compris), ou null.</summary>

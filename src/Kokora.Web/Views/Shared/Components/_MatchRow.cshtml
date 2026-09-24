@@ -6,11 +6,12 @@
     var label = $"{Model.Home?.Name ?? Model.HomePlaceholder} contre {Model.Away?.Name ?? Model.AwayPlaceholder}";
 }
 <a href="@Model.Url" class="match @(wide ? "wide" : "") @(Model.IsLive ? "is-live" : "")"
-   data-match="@Model.Id" aria-label="@label, @Display.StatusLabel(Model.Status)">
+   data-match="@Model.Id" data-watch="@(Model.Watch ? "" : null)" data-wide="@(wide ? "1" : null)" aria-label="@label, @Display.StatusLabel(Model.Status)">
     <div class="match-time num">
         @if (Model.Status == MatchStatus.Live)
         {
-            <span class="inline-flex items-center gap-1.5"><span class="live-dot"></span><span class="minute" data-minute>@Model.Minute</span></span>
+            <span class="inline-flex items-center gap-1.5"><span class="live-dot"></span><span class="minute" data-clock data-period="@((int)Model.Period)" data-started="@Model.PeriodStartedAt?.ToString("O")"
+                  data-half="@Model.HalfMinutes" data-extra="@Model.ExtraHalfMinutes">@Model.Minute</span></span>
         }
         else if (Model.Status == MatchStatus.Scheduled)
         {

@@ -1,0 +1,27 @@
+@model MatchDetailVm
+@{
+    var d = Model;
+    var m = d.Match;
+}
+<div id="match-timeline" hx-swap-oob="@(ViewData["Oob"] is true ? "true" : null)">
+                @if (d.Events.Count == 0)
+                {
+                    <div class="empty !py-8">
+                        @(m.Status == MatchStatus.Scheduled ? "Le match n'a pas encore commencé." : "Aucun événement saisi pour ce match.")
+                    </div>
+                }
+                @{ var halfTimeShown = false; }
+                @foreach (var e in d.Events)
+                {
+                    @if (!halfTimeShown && e.Period >= LivePeriod.SecondHalf && d.Events.Any(x => x.Period == LivePeriod.FirstHalf))
+                    {
+                        halfTimeShown = true;
+                        <div class="timeline-row bg-surface-2 !min-h-9"><div class="label col-span-3 text-center !text-ink-2">Mi-temps@(d.HomeHalfTime is not null ? $" · {d.HomeHalfTime}-{d.AwayHalfTime}" : "")</div></div>
+                    }
+                    <div class="timeline-row">
+                        <div class="home">@if (e.IsHome) { <partial name="_TimelineEvent" model="e" /> }</div>
+                        <div class="min">@e.Minute</div>
+                        <div class="away">@if (!e.IsHome) { <partial name="_TimelineEvent" model="e" /> }</div>
+                    </div>
+                }
+            </div>

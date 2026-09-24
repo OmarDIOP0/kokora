@@ -34,6 +34,26 @@ public class PublicMatchesController(MatchQueryService queries, StandingsService
         });
     }
 
+    /// <summary>En-tête et chronologie d'un match (rafraîchissement en direct de la fiche).</summary>
+    [HttpGet("/matchs/{id:int}/direct")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> LiveFragments(int id, CancellationToken ct)
+    {
+        var detail = await queries.DetailAsync(id, ct);
+        return detail is null ? NotFound() : PartialView("_LiveFragments", detail);
+    }
+
+    /// <summary>Une ligne de match, telle qu'affichée dans les listes (rafraîchissement en direct).</summary>
+    [HttpGet("/matchs/{id:int}/ligne")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> Row(int id, bool large, CancellationToken ct)
+    {
+        var row = await queries.RowAsync(id, ct);
+        if (row is null) return NotFound();
+        ViewData["Wide"] = large;
+        return PartialView("Components/_MatchRow", row);
+    }
+
     [HttpGet("/classements")]
     [HttpGet("/classements/{slug}")]
     public async Task<IActionResult> Standings(string? slug, int? phase, CancellationToken ct)

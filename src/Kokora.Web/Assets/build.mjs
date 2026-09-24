@@ -35,6 +35,7 @@ const options = {
     charts: 'Assets/js/charts.js',
     editor: 'Assets/js/editor.js',
     gallery: 'Assets/js/gallery.js',
+    field: 'Assets/js/field.js',
   },
   absWorkingDir: root,
   outdir: 'wwwroot/dist',

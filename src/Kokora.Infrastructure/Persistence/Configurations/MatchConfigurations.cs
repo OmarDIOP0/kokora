@@ -42,6 +42,9 @@ public class MatchEventConfiguration : IEntityTypeConfiguration<MatchEvent>
         b.HasOne(x => x.PlayerOut).WithMany().HasForeignKey(x => x.PlayerOutId).OnDelete(DeleteBehavior.Restrict);
         b.HasIndex(x => new { x.MatchId, x.IsCancelled });
         b.HasIndex(x => new { x.PlayerId, x.Type });
+        b.Property(x => x.ClientKey).HasMaxLength(40);
+        // Une action du mode terrain renvoyée deux fois (réseau instable) n'est enregistrée qu'une fois.
+        b.HasIndex(x => new { x.MatchId, x.ClientKey }).IsUnique().HasFilter("client_key IS NOT NULL");
         b.Ignore(x => x.MinuteLabel);
     }
 }

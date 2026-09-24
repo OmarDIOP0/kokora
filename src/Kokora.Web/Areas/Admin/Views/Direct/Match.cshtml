@@ -1,0 +1,151 @@
+@model Kokora.Application.Live.LiveStateVm
+@{
+    ViewData["Title"] = $"Direct · {Model.Home.ShortName} - {Model.Away.ShortName}";
+    var json = System.Text.Json.JsonSerializer.Serialize(Model, new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web));
+}
+@section Head {
+    <script type="module" src="~/dist/field.js" asp-append-version="true"></script>
+}
+
+<script type="application/json" id="field-state">@Html.Raw(json)</script>
+
+@* x-ignore : le composant est démarré par field.js une fois chargé. *@
+<div class="field-mode" x-ignore data-field-mode="@Model.Id">
+    <!-- Tableau d'affichage -->
+    <section class="section field-board">
+        <div class="flex items-center justify-between gap-2 px-4 pt-3 text-[12px] text-ink-3">
+            <a href="/admin/direct" class="inline-flex items-center gap-1 hover:text-ink"><icon name="chevron-left" />Matchs</a>
+            <span class="truncate">@Model.Competition · @Model.Stage</span>
+            <span class="inline-flex items-center gap-1.5" :title="connected ? 'Temps réel connecté' : 'Temps réel déconnecté'">
+                <span class="h-2 w-2 rounded-full" :class="connected && online ? 'bg-win' : 'bg-loss'"></span>
+                <span x-text="online ? (connected ? 'En ligne' : 'Connexion…') : 'Hors ligne'">…</span>
+            </span>
+        </div>
+        <div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 pb-3 pt-2">
+            <div class="grid justify-items-center gap-1 text-center">
+                <crest team="Model.Home" size="lg" />
+                <span class="text-[14px] font-semibold leading-tight">@Model.Home.ShortName</span>
+            </div>
+            <div class="text-center">
+                <div class="score text-[56px] leading-none" :class="live && 'text-live'">
+                    <span x-text="s.homeScore">@Model.HomeScore</span><span class="mx-1 text-ink-3">-</span><span x-text="s.awayScore">@Model.AwayScore</span>
+                </div>
+                <div class="mt-1 text-[13px] font-semibold text-ink-2" x-show="s.homePenalties !== null" x-cloak>
+                    TAB <span x-text="s.homePenalties"></span>-<span x-text="s.awayPenalties"></span>
+                </div>
+            </div>
+            <div class="grid justify-items-center gap-1 text-center">
+                <crest team="Model.Away" size="lg" />
+                <span class="text-[14px] font-semibold leading-tight">@Model.Away.ShortName</span>
+            </div>
+        </div>
+        <div class="flex items-center justify-center gap-3 border-t border-line px-4 py-2">
+            <span class="label !text-ink-2" x-text="s.periodLabel">@Model.PeriodLabel</span>
+            <span class="score text-[26px] text-live" x-show="s.running" x-text="watch" x-cloak></span>
+            <button type="button" class="btn btn-ghost btn-sm" x-show="s.running" x-cloak @@click="fixMinute()">Corriger</button>
+        </div>
+        <div class="notice !rounded-none border-t border-line !bg-[color-mix(in_srgb,var(--warn)_14%,transparent)]" x-show="queue.length" x-cloak role="status">
+            <icon name="cloud-upload" />
+            <span><strong x-text="queue.length"></strong> action(s) en attente d'envoi <span class="text-ink-3" x-text="online ? '' : '(hors ligne)'"></span></span>
+        </div>
+    </section>
+
+    <!-- Périodes -->
+    <section class="section" x-show="s.next.length" x-cloak>
+        <div class="grid gap-2 p-3">
+            <template x-for="a in s.next" :key="a.to">
+                <button type="button" class="btn btn-xl" :class="a.to === 9 ? 'btn-secondary' : 'btn-primary'" @@click="period(a)" x-text="a.label"></button>
+            </template>
+        </div>
+    </section>
+
+    <!-- Actions par équipe -->
+    <section class="section" x-show="live" x-cloak>
+        <div class="grid grid-cols-2">
+            <template x-for="side in ['home', 'away']" :key="side">
+                <div class="grid gap-2 p-3" :class="side === 'home' && 'border-r border-line'">
+                    <div class="truncate text-center text-[13px] font-semibold text-ink-2" x-text="team(side).shortName"></div>
+                    <template x-if="s.period !== 8">
+                        <div class="grid gap-2">
+                            <button type="button" class="btn btn-primary field-btn" @@click="open('goal', side)"><span class="field-glyph">But</span></button>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button type="button" class="btn btn-secondary field-btn" @@click="open('yellow', side)" aria-label="Carton jaune"><span class="card-icon yellow !h-6 !w-4"></span></button>
+                                <button type="button" class="btn btn-secondary field-btn" @@click="open('red', side)" aria-label="Carton rouge"><span class="card-icon red !h-6 !w-4"></span></button>
+                            </div>
+                            <button type="button" class="btn btn-secondary field-btn" @@click="open('sub', side)"><icon name="arrow-left-right" />Rempl.</button>
+                        </div>
+                    </template>
+                    <template x-if="s.period === 8">
+                        <div class="grid gap-2">
+                            <button type="button" class="btn btn-primary field-btn" @@click="kick(side, true)"><icon name="check" />Tir réussi</button>
+                            <button type="button" class="btn btn-secondary field-btn" @@click="kick(side, false)"><icon name="x" />Tir manqué</button>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </section>
+
+    <!-- Chronologie (la plus récente en haut) -->
+    <section class="section">
+        <header class="section-head"><span>Actions</span><span class="sub" x-text="s.events.length"></span></header>
+        <div class="empty !py-6" x-show="!s.events.length">Aucune action pour l'instant.</div>
+        <template x-for="e in s.events" :key="e.id">
+            <div class="row !gap-3 !py-2">
+                <span class="score w-12 text-[16px] text-ink-2" x-text="e.type === 40 ? 'TAB' : e.minute"></span>
+                <span class="field-tag" :class="tagClass(e)" x-text="tag(e)"></span>
+                <div class="min-w-0 flex-1">
+                    <div class="truncate font-semibold" x-text="e.player || (e.type === 40 ? (e.isScored ? 'Réussi' : 'Manqué') : 'Joueur non précisé')"></div>
+                    <div class="truncate text-[12.5px] text-ink-3" x-text="detail(e)"></div>
+                </div>
+                <button type="button" class="btn btn-ghost btn-sm text-loss" @@click="cancel(e)">Annuler</button>
+            </div>
+        </template>
+    </section>
+
+    <p class="px-4 py-4 text-center text-[13px] text-ink-3">
+        <a href="@Model.Url" target="_blank" class="font-semibold text-brand">Voir la page publique du match</a>
+        · <a href="/admin/matchs/@Model.Id/resultat" class="font-semibold text-brand">Saisie complète du résultat</a>
+    </p>
+
+    <!-- Feuille de sélection (joueur, type de but, passeur…) -->
+    <div class="field-sheet-backdrop" x-show="sheet" x-cloak @@click="sheet = null"></div>
+    <div class="field-sheet" x-show="sheet" x-cloak role="dialog" aria-modal="true" :aria-label="sheet && sheetTitle()"
+         @@keydown.escape.window="sheet = null">
+        <template x-if="sheet">
+            <div class="flex max-h-full flex-col">
+                <div class="flex items-center gap-2 border-b border-line px-4 py-3">
+                    <div class="min-w-0 flex-1">
+                        <div class="font-display text-[20px] font-bold leading-tight" x-text="sheetTitle()"></div>
+                        <div class="text-[13px] text-ink-3" x-text="sheetHint()"></div>
+                    </div>
+                    <label class="grid justify-items-end text-[11px] font-semibold uppercase tracking-wide text-ink-3" x-show="sheet.kind !== 'kick'">
+                        Minute
+                        <input type="text" inputmode="numeric" class="input num !min-h-10 !w-20 text-center !text-[18px]" x-model="sheet.minute" aria-label="Minute">
+                    </label>
+                    <button type="button" class="btn btn-ghost btn-icon" @@click="sheet = null" aria-label="Fermer"><icon name="x" /></button>
+                </div>
+
+                <div class="segmented m-3" x-show="sheet.kind === 'goal' && sheet.step === 'player'">
+                    <template x-for="g in goalTypes" :key="g.type">
+                        <button type="button" :aria-pressed="sheet.goalType === g.type" @@click="sheet.goalType = g.type" x-text="g.label"></button>
+                    </template>
+                </div>
+
+                <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-3">
+                    <button type="button" class="btn btn-secondary mb-2 w-full" x-show="sheet.step === 'assist'" @@click="pick(null)">Pas de passeur</button>
+                    <div class="grid grid-cols-2 gap-2">
+                        <template x-for="p in sheetPlayers()" :key="p.id">
+                            <button type="button" class="player-pick" @@click="pick(p.id)" :disabled="p.id === sheet.playerId && sheet.step === 'assist'">
+                                <span class="score w-7 text-right text-[20px] text-ink-3" x-text="p.number ?? ''"></span>
+                                <span class="min-w-0 flex-1 truncate text-left" x-text="p.name"></span>
+                            </button>
+                        </template>
+                    </div>
+                    <p class="py-4 text-center text-[13px] text-ink-3" x-show="!sheetPlayers().length">Effectif non saisi pour cette équipe.</p>
+                    <button type="button" class="btn btn-ghost mt-2 w-full" x-show="sheet.step !== 'assist'" @@click="pick(null)">Joueur non identifié</button>
+                </div>
+            </div>
+        </template>
+    </div>
+</div>

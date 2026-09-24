@@ -81,7 +81,7 @@ Connexion : `/compte/connexion` (e-mail ou numéro de téléphone). Rôles :
 | Rôle | Accès |
 |---|---|
 | SuperAdmin, Admin | tout l'admin sportif : saisons, compétitions, phases, poules, tableaux, équipes, joueurs, stades, arbitres, calendrier, données de démo, journal d'audit |
-| Rédacteur | tableau de bord, infos (rédaction, catégories) et photos des matchs ; les sections sportives lui sont masquées |
+| Rédacteur | tableau de bord, direct (mode terrain), infos (rédaction, catégories) et photos des matchs ; les autres sections sportives lui sont masquées |
 
 Parcours type d'une saison :
 
@@ -94,6 +94,14 @@ Parcours type d'une saison :
 7. **Résultat** (depuis le calendrier ou le tableau de bord « Résultats à saisir ») : score, mi-temps, tirs au but, forfait (score administratif automatique), buteurs, passeurs et cartons. Les classements sont recalculés aussitôt et le vainqueur d'un match à élimination passe au tour suivant.
 8. **Discipline** : suspensions calculées automatiquement d'après les cartons ; ajouter les décisions de la commission (suspension supplémentaire, pénalité ou bonus de points). Classements recalculés aussitôt.
 9. **Qualification** (page d'une phase à élimination) : pour chaque place du premier tour, choisir « 1er de la Poule A », « Vainqueur Demi-finales 2 »… puis « Générer la qualification ». Une équipe choisie à la main sur un match reste prioritaire.
+
+**Direct, mode terrain** (`/admin/direct`, aussi pour les rédacteurs, pensé pour un téléphone) :
+
+- Gros boutons : coup d'envoi, mi-temps, 2e période, fin ; but (normal, penalty, contre son camp, penalty raté) avec buteur et passeur, cartons, remplacements ; séance de tirs au but.
+- Enchaînement des périodes automatique : en élimination directe, une égalité mène aux prolongations si la phase en prévoit, puis aux tirs au but. Un 2e jaune devient automatiquement une exclusion.
+- Chronomètre calé sur le coup d'envoi (bouton « Corriger » pour se recaler sur l'arbitre) ; chaque action peut être annulée.
+- Réseau instable : les actions sont gardées sur le téléphone et envoyées dès le retour du réseau, sans doublon (clé unique par action). L'écran reste allumé.
+- À la fin du match : résultat enregistré, classements recalculés, vainqueur qualifié pour le tour suivant. La saisie complète du résultat reste possible ensuite.
 
 **Infos** (`/admin/infos`, aussi pour les rédacteurs) :
 
@@ -109,7 +117,8 @@ Toutes les modifications sont tracées dans le **journal d'audit** (qui, quand, 
 
 ## Partie publique
 
-- `/` : matchs par jour (bande de dates), à venir, résultats ; bloc « En direct » rafraîchi toutes les 30 s ; équipes suivies en premier.
+- `/` : matchs par jour (bande de dates), à venir, résultats ; bloc « En direct » ; équipes suivies en premier.
+- **Temps réel** (SignalR, `/direct/hub`) : score, minute et chronologie se mettent à jour sans recharger la page (accueil, fiche match, fiche équipe…). La connexion n'est ouverte que si la page montre un match en cours ou proche ; la minute est calculée dans le navigateur. Sans connexion temps réel, le bloc « En direct » se rafraîchit toutes les 30 s. En production, le proxy inverse doit laisser passer les WebSockets (sinon SignalR bascule sur des requêtes longues, qui fonctionnent aussi).
 - `/matchs/{id}-{equipes}` : fiche match (chronologie, compositions, stats, confrontations), partage WhatsApp, aperçu Open Graph.
 - `/classements/{competition}` : tableaux par poule (forme, zones qualificatives, pénalités) et tableau final.
 - `/stats` : buteurs, passeurs, gestes décisifs, meilleures attaques et défenses, clean sheets, fair-play, suspendus et joueurs menacés (par compétition ou toute la saison).

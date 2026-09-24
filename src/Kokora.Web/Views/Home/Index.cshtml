@@ -100,12 +100,10 @@
             }
         </div>
 
-        @if (Model.Live.Count > 0)
-        {
-            <div id="live-block" class="max-md:mt-2" hx-get="@Model.Url()" hx-trigger="every 30s" hx-swap="innerHTML">
-                <partial name="_LiveBlock" model="Model" />
-            </div>
-        }
+        @* Bloc « En direct » : mis à jour instantanément par le temps réel (live.js), sinon toutes les 30 s. *@
+        <div id="live-block" class="max-md:mt-2 empty:hidden" hx-get="@Model.Url()" hx-trigger="every 30s[!window.kLive], refresh" hx-swap="innerHTML">
+            <partial name="_LiveBlock" model="Model" />
+        </div>
 
         @if (Model.View == MatchesView.Day)
         {

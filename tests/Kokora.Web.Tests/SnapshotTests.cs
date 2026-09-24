@@ -100,6 +100,26 @@ public class SnapshotTests(DemoDataFixture fx)
         };
         foreach (var (name, url) in adminNews)
             await File.WriteAllTextAsync(Path.Combine(dir, name + ".html"), await editor.GetStringAsync(url));
+
+        // Direct : un match de démo programmé passe en 1re période avec un but et un carton.
+        var liveId = await fx.QueryAsync(db => db.Matches.Where(m => m.IsDemo && m.Status == MatchStatus.Scheduled && m.HomeClubId != null && m.AwayClubId != null)
+            .OrderBy(m => m.KickoffAt).Select(m => new { m.Id, Home = m.HomeClubId!.Value, Away = m.AwayClubId!.Value }).FirstAsync());
+        using (var scope = fx.Factory.Services.CreateScope())
+        {
+            var live = scope.ServiceProvider.GetRequiredService<Kokora.Application.Live.LiveMatchService>();
+            var state = await live.StateAsync(liveId.Id);
+            if (state.Period == LivePeriod.NotStarted)
+            {
+                await live.AdvanceAsync(liveId.Id, LivePeriod.FirstHalf);
+                await live.SetMinuteAsync(liveId.Id, 27);
+                await live.AddEventAsync(liveId.Id, new() { Type = MatchEventType.Goal, ClubId = liveId.Home, PlayerId = state.HomeSquad[9].Id, AssistPlayerId = state.HomeSquad[7].Id });
+                await live.AddEventAsync(liveId.Id, new() { Type = MatchEventType.YellowCard, ClubId = liveId.Away, PlayerId = state.AwaySquad[4].Id });
+            }
+        }
+        await File.WriteAllTextAsync(Path.Combine(dir, "direct.html"), await client.GetStringAsync("/admin/direct"));
+        await File.WriteAllTextAsync(Path.Combine(dir, "direct-match.html"), await client.GetStringAsync($"/admin/direct/{liveId.Id}"));
+        await File.WriteAllTextAsync(Path.Combine(dir, "public-direct-accueil.html"), await anonymous.GetStringAsync("/?c=toutes&vue=a-venir"));
+        await File.WriteAllTextAsync(Path.Combine(dir, "public-direct-match.html"), await anonymous.GetStringAsync($"/matchs/{liveId.Id}"));
     }
 
     /// <summary>Image de test : bandes de couleur, sans aucun contenu réel.</summary>
